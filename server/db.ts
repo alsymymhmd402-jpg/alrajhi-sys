@@ -1,6 +1,14 @@
-import { eq } from "drizzle-orm";
+import { and, asc, desc, eq, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import {
+  callLogs,
+  conversations,
+  ConversationStatus,
+  invitations,
+  InsertUser,
+  supportMessages,
+  users,
+} from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +97,277 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+const preview = (content: string) => content.trim().replace(/\s+/g, " ").slice(0, 280);
+
+export async function createSupportConversation(input: {
+  publicId: string;
+  accessToken: string;
+  guestName: string;
+  issue: string;
+  invitationId?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+
+  const issue = input.issue.trim();
+  const inserted = await db.insert(conversations).values({
+    publicId: input.publicId,
+    accessToken: input.accessToken,
+    invitationId: input.invitationId,
+    guestName: input.guestName.trim(),
+    issue,
+    lastMessagePreview: preview(issue),
+    ownerUnread: true,
+  });
+  const conversationId = Number(inserted[0].insertId);
+
+  await db.insert(supportMessages).values({
+    conversationId,
+    sender: "guest",
+    content: issue,
+  });
+
+  return getSupportConversationById(conversationId);
+}
+
+export async function getSupportConversationById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function getGuestConversation(publicId: string, accessToken: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.publicId, publicId), eq(conversations.accessToken, accessToken)))
+    .limit(1);
+  return rows[0];
+}
+
+export async function listSupportConversations(input: {
+  search?: string;
+  status?: ConversationStatus | "all";
+  archived?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [eq(conversations.archived, input.archived ?? false)];
+  if (input.status && input.status !== "all") {
+    conditions.push(eq(conversations.status, input.status));
+  }
+
+  const search = input.search?.trim();
+  if (search) {
+    const pattern = `%${search}%`;
+    conditions.push(
+      or(
+        like(conversations.guestName, pattern),
+        like(conversations.issue, pattern),
+        like(conversations.lastMessagePreview, pattern),
+        like(conversations.publicId, pattern),
+      )!,
+    );
+  }
+
+  return db
+    .select()
+    .from(conversations)
+    .where(and(...conditions))
+    .orderBy(desc(conversations.ownerUnread), desc(conversations.lastMessageAt));
+}
+
+export async function listSupportMessages(conversationId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(supportMessages)
+    .where(eq(supportMessages.conversationId, conversationId))
+    .orderBy(asc(supportMessages.createdAt), asc(supportMessages.id));
+}
+
+export async function addGuestMessage(input: {
+  publicId: string;
+  accessToken: string;
+  content: string;
+}) {
+  const conversation = await getGuestConversation(input.publicId, input.accessToken);
+  if (!conversation) return { conversation: undefined, message: undefined, reason: "not_found" as const };
+  if (conversation.status === "closed") {
+    return { conversation, message: undefined, reason: "closed" as const };
+  }
+
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const content = input.content.trim();
+  const inserted = await db.insert(supportMessages).values({
+    conversationId: conversation.id,
+    sender: "guest",
+    content,
+  });
+  const messageId = Number(inserted[0].insertId);
+  await db
+    .update(conversations)
+    .set({ lastMessagePreview: preview(content), lastMessageAt: new Date(), ownerUnread: true })
+    .where(eq(conversations.id, conversation.id));
+  const messages = await db.select().from(supportMessages).where(eq(supportMessages.id, messageId)).limit(1);
+  return { conversation: await getSupportConversationById(conversation.id), message: messages[0], reason: undefined };
+}
+
+export async function addOwnerMessage(conversationId: number, content: string) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const cleanContent = content.trim();
+  const inserted = await db.insert(supportMessages).values({
+    conversationId,
+    sender: "owner",
+    content: cleanContent,
+  });
+  const messageId = Number(inserted[0].insertId);
+  await db
+    .update(conversations)
+    .set({ lastMessagePreview: preview(cleanContent), lastMessageAt: new Date(), ownerUnread: false })
+    .where(eq(conversations.id, conversationId));
+  const messages = await db.select().from(supportMessages).where(eq(supportMessages.id, messageId)).limit(1);
+  return messages[0];
+}
+
+export async function updateSupportConversation(
+  conversationId: number,
+  input: { status?: ConversationStatus; archived?: boolean; ownerUnread?: boolean },
+) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.update(conversations).set(input).where(eq(conversations.id, conversationId));
+  return getSupportConversationById(conversationId);
+}
+
+export async function getSupportStats() {
+  const list = await listSupportConversations({ archived: false, status: "all" });
+  return {
+    total: list.length,
+    open: list.filter(item => item.status === "open").length,
+    inProgress: list.filter(item => item.status === "in_progress").length,
+    unread: list.filter(item => item.ownerUnread).length,
+  };
+}
+
+export async function createInvitation(input: {
+  code: string;
+  label: string;
+  type: "reusable" | "one_time";
+  expiresAt?: Date;
+  createdByUserId?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const inserted = await db.insert(invitations).values(input);
+  const id = Number(inserted[0].insertId);
+  const rows = await db.select().from(invitations).where(eq(invitations.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function listInvitations() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(invitations).orderBy(desc(invitations.createdAt));
+}
+
+export async function getInvitationByCode(code: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(invitations).where(eq(invitations.code, code)).limit(1);
+  return rows[0];
+}
+
+export async function validateInvitation(code: string) {
+  const invitation = await getInvitationByCode(code);
+  if (!invitation) return { invitation: undefined, reason: "not_found" as const };
+  if (invitation.status !== "active") return { invitation, reason: "inactive" as const };
+  if (invitation.expiresAt && invitation.expiresAt.getTime() <= Date.now()) {
+    await updateInvitation(invitation.id, { status: "expired" });
+    return { invitation: { ...invitation, status: "expired" as const }, reason: "expired" as const };
+  }
+  return { invitation, reason: undefined };
+}
+
+export async function consumeInvitation(invitationId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const invitationRows = await db.select().from(invitations).where(eq(invitations.id, invitationId)).limit(1);
+  const invitation = invitationRows[0];
+  if (!invitation) return undefined;
+  const nextStatus = invitation.type === "one_time" ? "revoked" : invitation.status;
+  await db
+    .update(invitations)
+    .set({ usageCount: invitation.usageCount + 1, lastUsedAt: new Date(), status: nextStatus })
+    .where(and(eq(invitations.id, invitationId), eq(invitations.status, "active")));
+  return invitation;
+}
+
+export async function updateInvitation(
+  id: number,
+  input: { label?: string; status?: "active" | "revoked" | "expired"; expiresAt?: Date | null },
+) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.update(invitations).set(input).where(eq(invitations.id, id));
+  const rows = await db.select().from(invitations).where(eq(invitations.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function deleteInvitation(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.delete(invitations).where(eq(invitations.id, id));
+}
+
+export async function createCallLog(input: {
+  conversationId?: number;
+  invitationId?: number;
+  mode: "direct";
+  status?: "requested" | "ringing" | "connected" | "ended" | "failed" | "cancelled";
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const inserted = await db.insert(callLogs).values(input);
+  const id = Number(inserted[0].insertId);
+  const rows = await db.select().from(callLogs).where(eq(callLogs.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function updateCallLog(
+  id: number,
+  input: {
+    status?: "requested" | "ringing" | "connected" | "ended" | "failed" | "cancelled";
+    providerConversationId?: string;
+    failureReason?: string;
+    startedAt?: Date;
+    endedAt?: Date;
+    durationSeconds?: number;
+  },
+) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.update(callLogs).set(input).where(eq(callLogs.id, id));
+  const rows = await db.select().from(callLogs).where(eq(callLogs.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function getCallLog(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(callLogs).where(eq(callLogs.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function listCallLogs(limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(callLogs).orderBy(desc(callLogs.createdAt)).limit(limit);
+}
