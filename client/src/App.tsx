@@ -17,6 +17,7 @@ function Router() {
       <Route path={"/chat/:publicId"} component={GuestChat} />
       <Route path={"/invite/:code"} component={InviteGuest} />
       <Route path={"/dashboard"} component={Dashboard} />
+      <Route path={"/dashboard/contacts"} component={Dashboard} />
       <Route path={"/dashboard/invitations"} component={Dashboard} />
       <Route path={"/dashboard/calls"} component={Dashboard} />
       <Route path={"/dashboard/archive"} component={Dashboard} />

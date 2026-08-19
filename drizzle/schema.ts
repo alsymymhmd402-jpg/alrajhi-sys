@@ -33,6 +33,7 @@ export const conversations = mysqlTable(
     publicId: varchar("publicId", { length: 24 }).notNull().unique(),
     accessToken: varchar("accessToken", { length: 64 }).notNull().unique(),
     invitationId: int("invitationId"),
+    contactId: int("contactId"),
     guestName: varchar("guestName", { length: 120 }).notNull(),
     issue: text("issue").notNull(),
     status: mysqlEnum("status", ["open", "in_progress", "closed"]).default("open").notNull(),
@@ -48,6 +49,7 @@ export const conversations = mysqlTable(
     index("conversations_status_idx").on(table.status),
     index("conversations_archived_idx").on(table.archived),
     index("conversations_invitation_idx").on(table.invitationId),
+    index("conversations_contact_idx").on(table.contactId),
   ],
 );
 
@@ -112,8 +114,41 @@ export const callLogs = mysqlTable(
   ],
 );
 
+/** A customer record that unifies conversations and calls under one support identity. */
+export const contacts = mysqlTable(
+  "contacts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    displayName: varchar("displayName", { length: 120 }).notNull(),
+    lastActivityAt: timestamp("lastActivityAt").defaultNow().notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("contacts_last_activity_idx").on(table.lastActivityAt)],
+);
+
+/** Guest browser session associated with the customer and their support conversation. */
+export const guestSessions = mysqlTable(
+  "guest_sessions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    publicId: varchar("publicId", { length: 24 }).notNull().unique(),
+    contactId: int("contactId").notNull(),
+    conversationId: int("conversationId").notNull(),
+    startedAt: timestamp("startedAt").defaultNow().notNull(),
+    lastSeenAt: timestamp("lastSeenAt").defaultNow().notNull(),
+    endedAt: timestamp("endedAt"),
+  },
+  table => [
+    index("guest_sessions_contact_idx").on(table.contactId),
+    index("guest_sessions_conversation_idx").on(table.conversationId),
+  ],
+);
+
 export type Conversation = typeof conversations.$inferSelect;
 export type SupportMessage = typeof supportMessages.$inferSelect;
 export type ConversationStatus = Conversation["status"];
 export type Invitation = typeof invitations.$inferSelect;
 export type CallLog = typeof callLogs.$inferSelect;
+export type Contact = typeof contacts.$inferSelect;
+export type GuestSession = typeof guestSessions.$inferSelect;

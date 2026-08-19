@@ -1,10 +1,12 @@
-import { and, asc, desc, eq, like, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   callLogs,
+  contacts,
   conversations,
   ConversationStatus,
   invitations,
+  guestSessions,
   InsertUser,
   supportMessages,
   users,
@@ -110,16 +112,28 @@ export async function createSupportConversation(input: {
   if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
 
   const issue = input.issue.trim();
+  const contactInserted = await db.insert(contacts).values({
+    displayName: input.guestName.trim(),
+    lastActivityAt: new Date(),
+  });
+  const contactId = Number(contactInserted[0].insertId);
   const inserted = await db.insert(conversations).values({
     publicId: input.publicId,
     accessToken: input.accessToken,
     invitationId: input.invitationId,
+    contactId,
     guestName: input.guestName.trim(),
     issue,
     lastMessagePreview: preview(issue),
     ownerUnread: true,
   });
   const conversationId = Number(inserted[0].insertId);
+
+  await db.insert(guestSessions).values({
+    publicId: input.publicId,
+    contactId,
+    conversationId,
+  });
 
   await db.insert(supportMessages).values({
     conversationId,
@@ -215,6 +229,10 @@ export async function addGuestMessage(input: {
     .update(conversations)
     .set({ lastMessagePreview: preview(content), lastMessageAt: new Date(), ownerUnread: true })
     .where(eq(conversations.id, conversation.id));
+  if (conversation.contactId) {
+    await db.update(contacts).set({ lastActivityAt: new Date() }).where(eq(contacts.id, conversation.contactId));
+    await db.update(guestSessions).set({ lastSeenAt: new Date() }).where(eq(guestSessions.conversationId, conversation.id));
+  }
   const messages = await db.select().from(supportMessages).where(eq(supportMessages.id, messageId)).limit(1);
   return { conversation: await getSupportConversationById(conversation.id), message: messages[0], reason: undefined };
 }
@@ -233,6 +251,10 @@ export async function addOwnerMessage(conversationId: number, content: string) {
     .update(conversations)
     .set({ lastMessagePreview: preview(cleanContent), lastMessageAt: new Date(), ownerUnread: false })
     .where(eq(conversations.id, conversationId));
+  const conversation = await getSupportConversationById(conversationId);
+  if (conversation?.contactId) {
+    await db.update(contacts).set({ lastActivityAt: new Date() }).where(eq(contacts.id, conversation.contactId));
+  }
   const messages = await db.select().from(supportMessages).where(eq(supportMessages.id, messageId)).limit(1);
   return messages[0];
 }
@@ -370,4 +392,37 @@ export async function listCallLogs(limit = 100) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(callLogs).orderBy(desc(callLogs.createdAt)).limit(limit);
+}
+
+export async function listContacts(search?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const term = search?.trim();
+  if (term) {
+    return db.select().from(contacts).where(like(contacts.displayName, `%${term}%`)).orderBy(desc(contacts.lastActivityAt));
+  }
+  return db.select().from(contacts).orderBy(desc(contacts.lastActivityAt));
+}
+
+export async function getContactDetails(contactId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const contactRows = await db.select().from(contacts).where(eq(contacts.id, contactId)).limit(1);
+  const contact = contactRows[0];
+  if (!contact) return undefined;
+  const contactConversations = await db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.contactId, contactId))
+    .orderBy(desc(conversations.lastMessageAt));
+  const sessions = await db
+    .select()
+    .from(guestSessions)
+    .where(eq(guestSessions.contactId, contactId))
+    .orderBy(desc(guestSessions.lastSeenAt));
+  const conversationIds = contactConversations.map(conversation => conversation.id);
+  const calls = conversationIds.length
+    ? await db.select().from(callLogs).where(inArray(callLogs.conversationId, conversationIds)).orderBy(desc(callLogs.createdAt))
+    : [];
+  return { contact, conversations: contactConversations, sessions, calls };
 }

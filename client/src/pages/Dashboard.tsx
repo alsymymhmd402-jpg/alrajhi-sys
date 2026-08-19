@@ -1,6 +1,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { OwnerCallListener } from "@/components/OwnerCallListener";
 import CallLogs from "@/pages/CallLogs";
+import Contacts from "@/pages/Contacts";
 import Invitations from "@/pages/Invitations";
 import { SupportChatThread } from "@/components/SupportChatThread";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { Archive, Inbox, Loader2, MessageSquareText, Search, Users } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 
@@ -29,6 +30,7 @@ function InboxContent() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [activeId, setActiveId] = useState<number | null>(null);
+  const knownUnreadIds = useRef<Set<number> | null>(null);
   const utils = trpc.useUtils();
   const listQuery = trpc.support.list.useQuery({ search: search || undefined, status, archived: isArchive }, { refetchInterval: 3000 });
   const statsQuery = trpc.support.stats.useQuery(undefined, { refetchInterval: 3000, enabled: !isArchive });
@@ -54,6 +56,15 @@ function InboxContent() {
   });
   const conversations = listQuery.data ?? [];
   const detail = conversationQuery.data;
+
+  useEffect(() => {
+    const unreadIds = new Set(conversations.filter(conversation => conversation.ownerUnread).map(conversation => conversation.id));
+    if (knownUnreadIds.current) {
+      const newlyUnread = Array.from(unreadIds).filter(id => !knownUnreadIds.current?.has(id));
+      if (newlyUnread.length > 0) toast.message(newlyUnread.length === 1 ? "وصلت رسالة جديدة من عميل." : `وصلت ${newlyUnread.length} رسائل جديدة من العملاء.`);
+    }
+    knownUnreadIds.current = unreadIds;
+  }, [conversations]);
 
   return (
     <div className="mx-auto flex max-w-[1480px] flex-col gap-5" dir="rtl">
@@ -126,6 +137,6 @@ function InboxContent() {
 
 export default function Dashboard() {
   const [location] = useLocation();
-  const content = location === "/dashboard/invitations" ? <Invitations /> : location === "/dashboard/calls" ? <CallLogs /> : <InboxContent />;
+  const content = location === "/dashboard/contacts" ? <Contacts /> : location === "/dashboard/invitations" ? <Invitations /> : location === "/dashboard/calls" ? <CallLogs /> : <InboxContent />;
   return <DashboardLayout>{content}<OwnerCallListener /></DashboardLayout>;
 }
