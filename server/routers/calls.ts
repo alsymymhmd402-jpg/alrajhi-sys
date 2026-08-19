@@ -47,6 +47,13 @@ export const callsRouter = router({
     return db.createCallLog({ conversationId: conversation.id, invitationId: conversation.invitationId ?? undefined, mode: "direct" });
   }),
 
+  createOwnerDirect: adminProcedure.input(z.object({ conversationId: z.number().int().positive() })).mutation(async ({ input }) => {
+    const conversation = await db.getSupportConversationById(input.conversationId);
+    if (!conversation) throw new TRPCError({ code: "NOT_FOUND", message: "المحادثة غير موجودة." });
+    if (!canStartDirectCall(conversation.status)) throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكن بدء مكالمة من محادثة مغلقة." });
+    return db.createCallLog({ conversationId: conversation.id, invitationId: conversation.invitationId ?? undefined, mode: "direct" });
+  }),
+
   ownerRealtimeToken: adminProcedure.mutation(({ ctx }) => ({ token: issueOwnerRealtimeToken(ctx.user.id) })),
 
   list: adminProcedure.query(() => db.listCallLogs()),

@@ -1,5 +1,6 @@
 import { SupportChatThread } from "@/components/SupportChatThread";
 import { GuestCallControl } from "@/components/GuestCallControl";
+import { GuestIncomingCall } from "@/components/GuestIncomingCall";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
@@ -7,8 +8,16 @@ import { ArrowRight, Loader2, MessageCircleMore } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { Link, useLocation, useRoute } from "wouter";
+import { io } from "socket.io-client";
 
 const statusLabels = { open: "مفتوحة", in_progress: "قيد المعالجة", closed: "مغلقة" };
+
+const fileToBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
+  reader.onerror = () => reject(new Error("تعذّر قراءة الملف."));
+  reader.readAsDataURL(file);
+});
 
 export default function GuestChat() {
   const [, params] = useRoute("/chat/:publicId");
@@ -26,10 +35,23 @@ export default function GuestChat() {
     },
     onError: error => toast.error(error.message),
   });
+  const attachmentMutation = trpc.support.guestSendAttachment.useMutation({
+    onSuccess: () => { utils.support.guestConversation.invalidate(); toast.success("تم إرسال الملف."); },
+    onError: error => toast.error(error.message),
+  });
 
   useEffect(() => {
     if (publicId && !accessToken) setLocation("/");
   }, [accessToken, publicId, setLocation]);
+
+  useEffect(() => {
+    if (!publicId || !accessToken) return;
+    const socket = io({ path: "/api/realtime", transports: ["websocket"], auth: { role: "guest", publicId, accessToken } });
+    socket.on("chat:message", () => utils.support.guestConversation.invalidate());
+    socket.io.on("reconnect", () => { utils.support.guestConversation.invalidate(); toast.success("تمت إعادة اتصال المحادثة."); });
+    socket.on("connect_error", () => toast.error("تعذّر الاتصال الحي، ستستمر المحادثة عند عودة الشبكة."));
+    return () => { socket.disconnect(); };
+  }, [accessToken, publicId, utils]);
 
   if (!accessToken) return null;
 
@@ -50,7 +72,7 @@ export default function GuestChat() {
     );
   }
 
-  const { conversation, messages } = conversationQuery.data;
+  const { conversation, messages, attachments } = conversationQuery.data;
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-5 sm:px-8 sm:py-8" dir="rtl">
       <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-4xl flex-col gap-4">
@@ -64,9 +86,17 @@ export default function GuestChat() {
           title={`مرحباً ${conversation.guestName}`}
           subtitle="فريق الدعم يتابع طلبك، وستظهر الردود هنا تلقائياً."
           disabled={conversation.status === "closed"}
-          isSending={sendMutation.isPending}
+          attachments={attachments}
+          isSending={sendMutation.isPending || attachmentMutation.isPending}
           onSend={content => sendMutation.mutate({ publicId, accessToken, content })}
+          onSendAttachment={async file => {
+            try {
+              const base64 = await fileToBase64(file);
+              attachmentMutation.mutate({ publicId, accessToken, fileName: file.name, mimeType: file.type || "application/octet-stream", base64 });
+            } catch (error) { toast.error(error instanceof Error ? error.message : "تعذّر تجهيز الملف."); }
+          }}
         />
+        <GuestIncomingCall publicId={publicId} accessToken={accessToken} />
       </div>
     </main>
   );

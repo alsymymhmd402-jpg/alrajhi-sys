@@ -1,0 +1,20 @@
+import { Button } from "@/components/ui/button";
+import { trpc } from "@/lib/trpc";
+import { Mic, PhoneCall, PhoneOff } from "lucide-react";
+import { io, Socket } from "socket.io-client";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+
+export function GuestIncomingCall({ publicId, accessToken }: { publicId: string; accessToken: string }) {
+  const [callId, setCallId] = useState<number | null>(null);
+  const [connected, setConnected] = useState(false);
+  const socketRef = useRef<Socket | null>(null); const peerRef = useRef<RTCPeerConnection | null>(null); const streamRef = useRef<MediaStream | null>(null); const audioRef = useRef<HTMLAudioElement>(null);
+  const iceQuery = trpc.calls.iceConfig.useQuery({ publicId, accessToken });
+  const cleanup = () => { peerRef.current?.close(); peerRef.current = null; streamRef.current?.getTracks().forEach(track => track.stop()); streamRef.current = null; setConnected(false); setCallId(null); };
+  useEffect(() => { const socket = io({ path: "/api/realtime", transports: ["websocket"], auth: { role: "guest", publicId, accessToken } }); socketRef.current = socket; socket.on("call:incoming", ({ callId: incomingId }) => { setCallId(incomingId); toast.message("لديك مكالمة واردة من فريق الدعم."); }); socket.on("webrtc:offer", async ({ callId: offeredId, sdp }) => { if (offeredId !== callId || !peerRef.current) return; await peerRef.current.setRemoteDescription(sdp); const answer = await peerRef.current.createAnswer(); await peerRef.current.setLocalDescription(answer); socket.emit("webrtc:answer", { callId: offeredId, sdp: answer }); setConnected(true); }); socket.on("webrtc:ice", async ({ candidate }) => { if (peerRef.current) await peerRef.current.addIceCandidate(candidate); }); socket.on("call:ended", ({ reason }) => { cleanup(); if (reason) toast.message(reason); }); return () => { socket.disconnect(); cleanup(); }; }, [publicId, accessToken, callId]);
+  const accept = async () => { if (!callId || !socketRef.current) return; try { const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); streamRef.current = stream; const peer = new RTCPeerConnection({ iceServers: iceQuery.data?.iceServers as RTCIceServer[] | undefined }); peerRef.current = peer; stream.getTracks().forEach(track => peer.addTrack(track, stream)); peer.onicecandidate = event => { if (event.candidate) socketRef.current?.emit("webrtc:ice", { callId, candidate: event.candidate.toJSON() }); }; peer.ontrack = event => { if (audioRef.current) audioRef.current.srcObject = event.streams[0]; }; socketRef.current.emit("call:guest-accept", { callId }); } catch { toast.error("يرجى السماح بالميكروفون لقبول المكالمة."); } };
+  const reject = () => { if (callId) socketRef.current?.emit("call:guest-reject", { callId }); cleanup(); };
+  const end = () => { if (callId) socketRef.current?.emit("call:end", { callId, reason: "أنهى العميل المكالمة." }); cleanup(); };
+  if (!callId) return null;
+  return <aside className="fixed inset-x-4 bottom-5 z-50 mx-auto max-w-sm rounded-3xl border border-blue-200 bg-white p-5 shadow-2xl shadow-blue-300/30" dir="rtl"><audio ref={audioRef} autoPlay /><div className="flex items-center gap-3"><span className="flex size-11 items-center justify-center rounded-2xl bg-blue-100 text-blue-700"><PhoneCall className="size-5 animate-pulse" /></span><div><p className="font-bold text-slate-900">مكالمة من فريق الدعم</p><p className="mt-1 text-sm text-slate-500">{connected ? "المكالمة متصلة" : "مكالمة واردة"}</p></div></div><div className="mt-5 flex gap-2">{connected ? <Button onClick={end} className="flex-1 rounded-xl bg-red-600 hover:bg-red-700"><PhoneOff className="ml-2 size-4" />إنهاء المكالمة</Button> : <><Button onClick={accept} className="flex-1 rounded-xl bg-blue-600 hover:bg-blue-700"><Mic className="ml-2 size-4" />قبول</Button><Button variant="outline" onClick={reject} className="rounded-xl border-red-200 text-red-600"><PhoneOff className="size-4" /><span className="sr-only">رفض</span></Button></>}</div></aside>;
+}

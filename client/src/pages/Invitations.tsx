@@ -6,7 +6,7 @@ import { Clipboard, Link2, Loader2, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-const labels = { reusable: "قابل لإعادة الاستخدام", one_time: "مرة واحدة", active: "نشط", revoked: "ملغى", expired: "منتهي" };
+const labels = { reusable: "قابل لإعادة الاستخدام", one_time: "مرة واحدة", active: "نشط", used: "مستخدم", revoked: "ملغى", expired: "منتهي" };
 const formatDate = (value: Date | string | null) => value ? new Intl.DateTimeFormat("ar-EG", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "دون انتهاء";
 
 export default function Invitations() {

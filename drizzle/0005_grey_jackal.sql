@@ -1,0 +1,1 @@
+ALTER TABLE `invitations` MODIFY COLUMN `status` enum('active','used','revoked','expired') NOT NULL DEFAULT 'active';

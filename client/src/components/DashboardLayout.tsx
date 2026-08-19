@@ -21,17 +21,22 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Archive, Link2, LogOut, MessageSquareText, PanelRight, PhoneCall, UsersRound } from "lucide-react";
+import { Archive, Bot, ClipboardList, LayoutDashboard, Link2, LogOut, MessageSquareText, PanelRight, PhoneCall, Settings2, UsersRound, Waves } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: MessageSquareText, label: "المحادثات", path: "/dashboard" },
+  { icon: LayoutDashboard, label: "لوحة التحكم", path: "/dashboard" },
   { icon: UsersRound, label: "العملاء", path: "/dashboard/contacts" },
+  { icon: ClipboardList, label: "الطلبات", path: "/dashboard/requests" },
+  { icon: MessageSquareText, label: "المحادثات", path: "/dashboard/chats" },
   { icon: Link2, label: "روابط الدعوة", path: "/dashboard/invitations" },
   { icon: PhoneCall, label: "سجل المكالمات", path: "/dashboard/calls" },
+  { icon: Bot, label: "Voice AI", path: "/dashboard/voice-ai" },
+  { icon: Waves, label: "النماذج الصوتية", path: "/dashboard/voice-models" },
+  { icon: Settings2, label: "الإعدادات", path: "/dashboard/settings" },
   { icon: Archive, label: "الأرشيف", path: "/dashboard/archive" },
 ];
 

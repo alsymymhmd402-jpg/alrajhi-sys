@@ -16,8 +16,11 @@ type RealtimeSocket = Socket & {
 
 const ownerTokens = new Map<string, OwnerToken>();
 const guestSocketByCall = new Map<number, string>();
+const guestSocketByConversation = new Map<number, string>();
+const ownerSocketByCall = new Map<number, string>();
 const callStartedAt = new Map<number, number>();
 const OWNER_LOBBY = "owner:lobby";
+let realtimeIo: Server | null = null;
 
 function cleanupExpiredOwnerTokens() {
   const now = Date.now();
@@ -37,6 +40,22 @@ function callRoom(callId: number) {
   return `call:${callId}`;
 }
 
+function chatRoom(conversationId: number) {
+  return `chat:${conversationId}`;
+}
+
+export function emitChatMessageTo(
+  io: Pick<Server, "to">,
+  conversationId: number,
+  payload: { messageId: number; sender: "guest" | "owner" },
+) {
+  io.to(chatRoom(conversationId)).emit("chat:message", payload);
+}
+
+export function emitRealtimeMessage(conversationId: number, payload: { messageId: number; sender: "guest" | "owner" }) {
+  if (realtimeIo) emitChatMessageTo(realtimeIo, conversationId, payload);
+}
+
 async function verifyCallAccess(socket: RealtimeSocket, callId: number) {
   const call = await db.getCallLog(callId);
   if (!call || call.mode !== "direct") return undefined;
@@ -49,6 +68,7 @@ export function registerRealtimeGateway(server: HttpServer) {
     path: "/api/realtime",
     cors: { origin: true, credentials: true },
   });
+  realtimeIo = io;
 
   io.use(async (rawSocket, next) => {
     const socket = rawSocket as RealtimeSocket;
@@ -83,6 +103,20 @@ export function registerRealtimeGateway(server: HttpServer) {
   io.on("connection", rawSocket => {
     const socket = rawSocket as RealtimeSocket;
     if (socket.data.role === "owner") socket.join(OWNER_LOBBY);
+    if (socket.data.role === "guest" && socket.data.conversationId) {
+      guestSocketByConversation.set(socket.data.conversationId, socket.id);
+      socket.join(chatRoom(socket.data.conversationId));
+      void (async () => {
+        const conversation = await db.getSupportConversationById(socket.data.conversationId!);
+        if (conversation?.contactId) await db.updateContact(conversation.contactId, { connectionStatus: "online" });
+      })();
+    }
+
+    socket.on("chat:join", async ({ conversationId }: { conversationId: number }) => {
+      if (socket.data.role !== "owner" || !Number.isInteger(conversationId)) return;
+      const conversation = await db.getSupportConversationById(conversationId);
+      if (conversation) socket.join(chatRoom(conversationId));
+    });
 
     socket.on("call:request", async ({ callId }: { callId: number }) => {
       if (socket.data.role !== "guest" || !Number.isInteger(callId)) return;
@@ -96,6 +130,24 @@ export function registerRealtimeGateway(server: HttpServer) {
         conversationId: socket.data.conversationId,
         guestName: socket.data.guestName,
       });
+      socket.emit("call:ringing", { callId });
+    });
+
+    socket.on("call:owner-request", async ({ callId }: { callId: number }) => {
+      if (socket.data.role !== "owner" || !Number.isInteger(callId)) return;
+      const call = await verifyCallAccess(socket, callId);
+      if (!call || call.status !== "requested" || !call.conversationId) return;
+      const guestSocketId = guestSocketByConversation.get(call.conversationId);
+      if (!guestSocketId) {
+        await db.updateCallLog(callId, { status: "failed", endedAt: new Date(), failureReason: "العميل غير متصل الآن." });
+        socket.emit("call:ended", { callId, reason: "العميل غير متصل الآن." });
+        return;
+      }
+      guestSocketByCall.set(callId, guestSocketId);
+      ownerSocketByCall.set(callId, socket.id);
+      socket.data.callId = callId;
+      await db.updateCallLog(callId, { status: "ringing" });
+      io.to(guestSocketId).emit("call:incoming", { callId });
       socket.emit("call:ringing", { callId });
     });
 
@@ -123,6 +175,31 @@ export function registerRealtimeGateway(server: HttpServer) {
       guestSocketByCall.delete(callId);
     });
 
+    socket.on("call:guest-accept", async ({ callId }: { callId: number }) => {
+      if (socket.data.role !== "guest" || !Number.isInteger(callId)) return;
+      const call = await verifyCallAccess(socket, callId);
+      const ownerSocketId = ownerSocketByCall.get(callId);
+      if (!call || !ownerSocketId) return;
+      const room = callRoom(callId);
+      socket.join(room);
+      const ownerSocket = io.sockets.sockets.get(ownerSocketId) as RealtimeSocket | undefined;
+      ownerSocket?.join(room);
+      callStartedAt.set(callId, Date.now());
+      await db.updateCallLog(callId, { status: "connected", startedAt: new Date() });
+      io.to(room).emit("call:accepted", { callId, caller: "owner" });
+    });
+
+    socket.on("call:guest-reject", async ({ callId }: { callId: number }) => {
+      if (socket.data.role !== "guest" || !Number.isInteger(callId)) return;
+      const call = await verifyCallAccess(socket, callId);
+      const ownerSocketId = ownerSocketByCall.get(callId);
+      if (!call) return;
+      await db.updateCallLog(callId, { status: "cancelled", endedAt: new Date(), failureReason: "رفض العميل المكالمة." });
+      if (ownerSocketId) io.to(ownerSocketId).emit("call:ended", { callId, reason: "رفض العميل المكالمة." });
+      guestSocketByCall.delete(callId);
+      ownerSocketByCall.delete(callId);
+    });
+
     socket.on("webrtc:offer", async ({ callId, sdp }: { callId: number; sdp: RTCSessionDescriptionInit }) => {
       if (!Number.isInteger(callId) || !(await verifyCallAccess(socket, callId))) return;
       socket.to(callRoom(callId)).emit("webrtc:offer", { callId, sdp });
@@ -145,12 +222,20 @@ export function registerRealtimeGateway(server: HttpServer) {
       await db.updateCallLog(callId, { status: "ended", endedAt: new Date(), durationSeconds, failureReason: reason?.slice(0, 300) });
       io.to(callRoom(callId)).emit("call:ended", { callId, reason: reason ?? "انتهت المكالمة." });
       guestSocketByCall.delete(callId);
+      ownerSocketByCall.delete(callId);
       callStartedAt.delete(callId);
     });
 
     socket.on("disconnect", () => {
       if (socket.data.role === "guest" && socket.data.callId) {
         io.to(OWNER_LOBBY).emit("call:guest-disconnected", { callId: socket.data.callId });
+      }
+      if (socket.data.role === "guest" && socket.data.conversationId) {
+        guestSocketByConversation.delete(socket.data.conversationId);
+        void (async () => {
+          const conversation = await db.getSupportConversationById(socket.data.conversationId!);
+          if (conversation?.contactId) await db.updateContact(conversation.contactId, { connectionStatus: "offline" });
+        })();
       }
     });
   });

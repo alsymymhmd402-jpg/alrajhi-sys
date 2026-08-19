@@ -29,6 +29,20 @@
       "when": 1787174709401,
       "tag": "0003_motionless_kang",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1787176589084,
+      "tag": "0004_skinny_goliath",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1787177000663,
+      "tag": "0005_grey_jackal",
+      "breakpoints": true
     }
   ]
 }

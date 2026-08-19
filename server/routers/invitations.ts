@@ -5,7 +5,7 @@ import * as db from "../db";
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
 
 const invitationTypeSchema = z.enum(["reusable", "one_time"]);
-const invitationStatusSchema = z.enum(["active", "revoked", "expired"]);
+const invitationStatusSchema = z.enum(["active", "used", "revoked", "expired"]);
 const invitationCodeSchema = z.string().trim().min(8).max(24);
 
 export const canUseInvitation = (status: z.infer<typeof invitationStatusSchema>, expiresAt: Date | null, now = Date.now()) =>

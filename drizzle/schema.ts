@@ -76,7 +76,7 @@ export const invitations = mysqlTable(
     code: varchar("code", { length: 24 }).notNull().unique(),
     label: varchar("label", { length: 120 }).notNull(),
     type: mysqlEnum("type", ["reusable", "one_time"]).default("reusable").notNull(),
-    status: mysqlEnum("status", ["active", "revoked", "expired"]).default("active").notNull(),
+    status: mysqlEnum("status", ["active", "used", "revoked", "expired"]).default("active").notNull(),
     usageCount: int("usageCount").default(0).notNull(),
     expiresAt: timestamp("expiresAt"),
     lastUsedAt: timestamp("lastUsedAt"),
@@ -120,6 +120,11 @@ export const contacts = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     displayName: varchar("displayName", { length: 120 }).notNull(),
+    email: varchar("email", { length: 320 }),
+    phone: varchar("phone", { length: 40 }),
+    avatarUrl: varchar("avatarUrl", { length: 600 }),
+    extraData: text("extraData"),
+    connectionStatus: mysqlEnum("connectionStatus", ["online", "offline", "away"]).default("offline").notNull(),
     lastActivityAt: timestamp("lastActivityAt").defaultNow().notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -145,6 +150,68 @@ export const guestSessions = mysqlTable(
   ],
 );
 
+/** A persisted customer request submitted through the invite flow. */
+export const serviceRequests = mysqlTable(
+  "service_requests",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    requestNumber: varchar("requestNumber", { length: 32 }).notNull().unique(),
+    contactId: int("contactId").notNull(),
+    conversationId: int("conversationId").notNull(),
+    title: varchar("title", { length: 180 }).notNull(),
+    description: text("description").notNull(),
+    status: mysqlEnum("status", ["new", "in_progress", "waiting", "completed", "closed"]).default("new").notNull(),
+    lastUpdatedAt: timestamp("lastUpdatedAt").defaultNow().notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("service_requests_contact_idx").on(table.contactId),
+    index("service_requests_conversation_idx").on(table.conversationId),
+    index("service_requests_status_idx").on(table.status),
+  ],
+);
+
+/** A file or image attached to a support message, stored externally in S3. */
+export const messageAttachments = mysqlTable(
+  "message_attachments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    messageId: int("messageId").notNull(),
+    storageKey: varchar("storageKey", { length: 700 }).notNull(),
+    url: varchar("url", { length: 900 }).notNull(),
+    fileName: varchar("fileName", { length: 260 }).notNull(),
+    mimeType: varchar("mimeType", { length: 140 }).notNull(),
+    sizeBytes: int("sizeBytes").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("message_attachments_message_idx").on(table.messageId)],
+);
+
+/** Owner-managed registry of available voice models. No API secrets are stored here. */
+export const voiceModels = mysqlTable(
+  "voice_models",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    name: varchar("name", { length: 140 }).notNull(),
+    provider: varchar("provider", { length: 120 }).notNull(),
+    voiceId: varchar("voiceId", { length: 180 }).notNull(),
+    status: mysqlEnum("status", ["active", "disabled"]).default("active").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("voice_models_status_idx").on(table.status)],
+);
+
+/** Safe non-secret Owner settings for the product surface. */
+export const systemSettings = mysqlTable("system_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  settingKey: varchar("settingKey", { length: 120 }).notNull().unique(),
+  settingValue: text("settingValue").notNull(),
+  updatedByUserId: int("updatedByUserId"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export type Conversation = typeof conversations.$inferSelect;
 export type SupportMessage = typeof supportMessages.$inferSelect;
 export type ConversationStatus = Conversation["status"];
@@ -152,3 +219,6 @@ export type Invitation = typeof invitations.$inferSelect;
 export type CallLog = typeof callLogs.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
 export type GuestSession = typeof guestSessions.$inferSelect;
+export type ServiceRequest = typeof serviceRequests.$inferSelect;
+export type MessageAttachment = typeof messageAttachments.$inferSelect;
+export type VoiceModel = typeof voiceModels.$inferSelect;

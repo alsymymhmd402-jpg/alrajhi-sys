@@ -38,6 +38,7 @@ describe("قواعد محادثات الدعم", () => {
     expect(canUseInvitation("active", null, now)).toBe(true);
     expect(canUseInvitation("active", new Date(now + 1), now)).toBe(true);
     expect(canUseInvitation("active", new Date(now), now)).toBe(false);
+    expect(canUseInvitation("used", null, now)).toBe(false);
     expect(canUseInvitation("revoked", null, now)).toBe(false);
     expect(canUseInvitation("expired", null, now)).toBe(false);
   });

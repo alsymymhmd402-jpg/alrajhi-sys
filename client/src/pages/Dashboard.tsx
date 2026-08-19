@@ -1,8 +1,13 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { OwnerCallListener } from "@/components/OwnerCallListener";
+import { OwnerOutgoingCall } from "@/components/OwnerOutgoingCall";
 import CallLogs from "@/pages/CallLogs";
 import Contacts from "@/pages/Contacts";
 import Invitations from "@/pages/Invitations";
+import OperationsDashboard from "@/pages/OperationsDashboard";
+import Requests from "@/pages/Requests";
+import Settings from "@/pages/Settings";
+import { VoiceModels, VoiceStatus } from "@/pages/VoiceConsole";
 import { SupportChatThread } from "@/components/SupportChatThread";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,14 +15,21 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { Archive, Inbox, Loader2, MessageSquareText, Search, Users } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { io } from "socket.io-client";
 
 const statusLabels = { open: "مفتوحة", in_progress: "قيد المعالجة", closed: "مغلقة" };
 type StatusFilter = "all" | "open" | "in_progress" | "closed";
 
 const formatDate = (value: Date | string) => new Intl.DateTimeFormat("ar-EG", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+const fileToBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
+  reader.onerror = () => reject(new Error("تعذّر قراءة الملف."));
+  reader.readAsDataURL(file);
+});
 
 function StatusBadge({ status }: { status: "open" | "in_progress" | "closed" }) {
   const colors = { open: "bg-blue-100 text-blue-700", in_progress: "bg-amber-100 text-amber-700", closed: "bg-slate-200 text-slate-600" };
@@ -41,12 +53,13 @@ function InboxContent() {
     if (!activeId || !listQuery.data?.some(item => item.id === activeId)) setActiveId(firstId);
   }, [activeId, listQuery.data]);
 
-  const refresh = () => {
+  const refresh = useCallback(() => {
     utils.support.list.invalidate();
     utils.support.stats.invalidate();
     utils.support.ownerConversation.invalidate();
-  };
+  }, [utils]);
   const sendMutation = trpc.support.ownerSend.useMutation({ onSuccess: refresh, onError: error => toast.error(error.message) });
+  const attachmentMutation = trpc.support.ownerSendAttachment.useMutation({ onSuccess: () => { refresh(); toast.success("تم إرسال الملف."); }, onError: error => toast.error(error.message) });
   const updateMutation = trpc.support.update.useMutation({
     onSuccess: (_, input) => {
       refresh();
@@ -54,6 +67,7 @@ function InboxContent() {
     },
     onError: error => toast.error(error.message),
   });
+  const { mutateAsync: getOwnerRealtimeToken } = trpc.calls.ownerRealtimeToken.useMutation();
   const conversations = listQuery.data ?? [];
   const detail = conversationQuery.data;
 
@@ -65,6 +79,26 @@ function InboxContent() {
     }
     knownUnreadIds.current = unreadIds;
   }, [conversations]);
+
+  useEffect(() => {
+    if (!activeId) return;
+    let stopped = false;
+    let socket: ReturnType<typeof io> | null = null;
+    const connect = async () => {
+      try {
+        const auth = await getOwnerRealtimeToken();
+        if (stopped) return;
+        socket = io({ path: "/api/realtime", transports: ["websocket"], auth: { role: "owner", token: auth.token } });
+        socket.on("connect", () => socket?.emit("chat:join", { conversationId: activeId }));
+        socket.on("chat:message", () => refresh());
+        socket.io.on("reconnect", () => { refresh(); toast.success("تمت إعادة اتصال المحادثة."); });
+      } catch {
+        // تبقى آلية الاستعلام الدورية كمسار احتياطي عند فشل فتح القناة الحية.
+      }
+    };
+    void connect();
+    return () => { stopped = true; socket?.disconnect(); };
+  }, [activeId, getOwnerRealtimeToken, refresh]);
 
   return (
     <div className="mx-auto flex max-w-[1480px] flex-col gap-5" dir="rtl">
@@ -120,11 +154,12 @@ function InboxContent() {
               <div><p className="font-bold text-slate-800">{detail.conversation.guestName}</p><p className="mt-1 text-xs text-slate-500">بدأ المحادثة في {formatDate(detail.conversation.createdAt)}</p></div>
               <div className="flex items-center gap-2">
                 {!isArchive && <Select value={detail.conversation.status} onValueChange={value => updateMutation.mutate({ conversationId: detail.conversation.id, status: value as "open" | "in_progress" | "closed" })}><SelectTrigger className="h-9 w-40 rounded-xl border-slate-200"><SelectValue /></SelectTrigger><SelectContent dir="rtl"><SelectItem value="open">مفتوحة</SelectItem><SelectItem value="in_progress">قيد المعالجة</SelectItem><SelectItem value="closed">مغلقة</SelectItem></SelectContent></Select>}
+                {!isArchive && <OwnerOutgoingCall conversationId={detail.conversation.id} disabled={detail.conversation.status === "closed"} />}
                 {!isArchive && <Button variant="outline" onClick={() => updateMutation.mutate({ conversationId: detail.conversation.id, archived: true })} disabled={updateMutation.isPending} className="rounded-xl border-slate-200"><Archive className="ml-2 size-4" />أرشفة</Button>}
               </div>
             </div>
             <div className="min-h-0 flex-1">
-              <SupportChatThread messages={detail.messages} viewer="owner" title={detail.conversation.guestName} subtitle={detail.conversation.issue} disabled={detail.conversation.status === "closed" || isArchive} isSending={sendMutation.isPending} onSend={content => sendMutation.mutate({ conversationId: detail.conversation.id, content })} />
+              <SupportChatThread messages={detail.messages} attachments={detail.attachments} viewer="owner" title={detail.conversation.guestName} subtitle={detail.conversation.issue} disabled={detail.conversation.status === "closed" || isArchive} isSending={sendMutation.isPending || attachmentMutation.isPending} onSend={content => sendMutation.mutate({ conversationId: detail.conversation.id, content })} onSendAttachment={async file => { try { const base64 = await fileToBase64(file); attachmentMutation.mutate({ conversationId: detail.conversation.id, fileName: file.name, mimeType: file.type || "application/octet-stream", base64 }); } catch (error) { toast.error(error instanceof Error ? error.message : "تعذّر تجهيز الملف."); } }} />
             </div>
           </div>
         ) : (
@@ -137,6 +172,6 @@ function InboxContent() {
 
 export default function Dashboard() {
   const [location] = useLocation();
-  const content = location === "/dashboard/contacts" ? <Contacts /> : location === "/dashboard/invitations" ? <Invitations /> : location === "/dashboard/calls" ? <CallLogs /> : <InboxContent />;
+  const content = location === "/dashboard/contacts" ? <Contacts /> : location === "/dashboard/requests" ? <Requests /> : location === "/dashboard/chats" || location === "/dashboard/archive" ? <InboxContent /> : location === "/dashboard/invitations" ? <Invitations /> : location === "/dashboard/calls" ? <CallLogs /> : location === "/dashboard/voice-ai" ? <VoiceStatus /> : location === "/dashboard/voice-models" ? <VoiceModels /> : location === "/dashboard/settings" ? <Settings /> : <OperationsDashboard />;
   return <DashboardLayout>{content}<OwnerCallListener /></DashboardLayout>;
 }

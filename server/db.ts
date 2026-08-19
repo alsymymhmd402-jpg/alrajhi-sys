@@ -8,8 +8,12 @@ import {
   invitations,
   guestSessions,
   InsertUser,
+  messageAttachments,
+  serviceRequests,
   supportMessages,
+  systemSettings,
   users,
+  voiceModels,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -107,6 +111,9 @@ export async function createSupportConversation(input: {
   guestName: string;
   issue: string;
   invitationId?: number;
+  email?: string;
+  phone?: string;
+  extraData?: string;
 }) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
@@ -114,6 +121,9 @@ export async function createSupportConversation(input: {
   const issue = input.issue.trim();
   const contactInserted = await db.insert(contacts).values({
     displayName: input.guestName.trim(),
+    email: input.email?.trim() || undefined,
+    phone: input.phone?.trim() || undefined,
+    extraData: input.extraData?.trim() || undefined,
     lastActivityAt: new Date(),
   });
   const contactId = Number(contactInserted[0].insertId);
@@ -139,6 +149,14 @@ export async function createSupportConversation(input: {
     conversationId,
     sender: "guest",
     content: issue,
+  });
+
+  await db.insert(serviceRequests).values({
+    requestNumber: `REQ-${input.publicId.toUpperCase()}`,
+    contactId,
+    conversationId,
+    title: issue.slice(0, 180),
+    description: issue,
   });
 
   return getSupportConversationById(conversationId);
@@ -324,7 +342,7 @@ export async function consumeInvitation(invitationId: number) {
   const invitationRows = await db.select().from(invitations).where(eq(invitations.id, invitationId)).limit(1);
   const invitation = invitationRows[0];
   if (!invitation) return undefined;
-  const nextStatus = invitation.type === "one_time" ? "revoked" : invitation.status;
+  const nextStatus = invitation.type === "one_time" ? "used" : invitation.status;
   await db
     .update(invitations)
     .set({ usageCount: invitation.usageCount + 1, lastUsedAt: new Date(), status: nextStatus })
@@ -334,7 +352,7 @@ export async function consumeInvitation(invitationId: number) {
 
 export async function updateInvitation(
   id: number,
-  input: { label?: string; status?: "active" | "revoked" | "expired"; expiresAt?: Date | null },
+  input: { label?: string; status?: "active" | "used" | "revoked" | "expired"; expiresAt?: Date | null },
 ) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
@@ -424,5 +442,114 @@ export async function getContactDetails(contactId: number) {
   const calls = conversationIds.length
     ? await db.select().from(callLogs).where(inArray(callLogs.conversationId, conversationIds)).orderBy(desc(callLogs.createdAt))
     : [];
-  return { contact, conversations: contactConversations, sessions, calls };
+  const requests = await db.select().from(serviceRequests).where(eq(serviceRequests.contactId, contactId)).orderBy(desc(serviceRequests.lastUpdatedAt));
+  return { contact, conversations: contactConversations, sessions, calls, requests };
+}
+
+export async function updateContact(
+  id: number,
+  input: { displayName?: string; email?: string | null; phone?: string | null; avatarUrl?: string | null; extraData?: string | null; connectionStatus?: "online" | "offline" | "away" },
+) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.update(contacts).set(input).where(eq(contacts.id, id));
+  const rows = await db.select().from(contacts).where(eq(contacts.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function listServiceRequests(input: { search?: string; status?: "new" | "in_progress" | "waiting" | "completed" | "closed" | "all" }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [] as ReturnType<typeof eq>[];
+  if (input.status && input.status !== "all") conditions.push(eq(serviceRequests.status, input.status));
+  const term = input.search?.trim();
+  if (term) {
+    return db
+      .select()
+      .from(serviceRequests)
+      .where(and(...conditions, or(like(serviceRequests.requestNumber, `%${term}%`), like(serviceRequests.title, `%${term}%`))!))
+      .orderBy(desc(serviceRequests.lastUpdatedAt));
+  }
+  return conditions.length
+    ? db.select().from(serviceRequests).where(and(...conditions)).orderBy(desc(serviceRequests.lastUpdatedAt))
+    : db.select().from(serviceRequests).orderBy(desc(serviceRequests.lastUpdatedAt));
+}
+
+export async function updateServiceRequest(
+  id: number,
+  input: { status?: "new" | "in_progress" | "waiting" | "completed" | "closed"; title?: string; description?: string },
+) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.update(serviceRequests).set({ ...input, lastUpdatedAt: new Date() }).where(eq(serviceRequests.id, id));
+  const rows = await db.select().from(serviceRequests).where(eq(serviceRequests.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function createMessageAttachment(input: { messageId: number; storageKey: string; url: string; fileName: string; mimeType: string; sizeBytes: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const inserted = await db.insert(messageAttachments).values(input);
+  const rows = await db.select().from(messageAttachments).where(eq(messageAttachments.id, Number(inserted[0].insertId))).limit(1);
+  return rows[0];
+}
+
+export async function listMessageAttachments(messageIds: number[]) {
+  const db = await getDb();
+  if (!db || messageIds.length === 0) return [];
+  return db.select().from(messageAttachments).where(inArray(messageAttachments.messageId, messageIds));
+}
+
+export async function listVoiceModels() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(voiceModels).orderBy(desc(voiceModels.createdAt));
+}
+
+export async function createVoiceModel(input: { name: string; provider: string; voiceId: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const inserted = await db.insert(voiceModels).values(input);
+  const rows = await db.select().from(voiceModels).where(eq(voiceModels.id, Number(inserted[0].insertId))).limit(1);
+  return rows[0];
+}
+
+export async function updateVoiceModel(id: number, input: { name?: string; provider?: string; voiceId?: string; status?: "active" | "disabled" }) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.update(voiceModels).set(input).where(eq(voiceModels.id, id));
+  const rows = await db.select().from(voiceModels).where(eq(voiceModels.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function deleteVoiceModel(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.delete(voiceModels).where(eq(voiceModels.id, id));
+}
+
+export async function listSafeSettings() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(systemSettings).orderBy(asc(systemSettings.settingKey));
+}
+
+export async function setSafeSetting(settingKey: string, settingValue: string, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.insert(systemSettings).values({ settingKey, settingValue, updatedByUserId: userId }).onDuplicateKeyUpdate({ set: { settingValue, updatedByUserId: userId } });
+}
+
+export async function getOperationsSummary() {
+  const db = await getDb();
+  if (!db) return { customers: 0, requests: 0, activeChats: 0, calls: 0, activeInvites: 0, usedInvites: 0 };
+  const [allContacts, allRequests, activeChats, allCalls, activeInvites, usedInvites] = await Promise.all([
+    db.select({ id: contacts.id }).from(contacts),
+    db.select({ id: serviceRequests.id }).from(serviceRequests),
+    db.select({ id: conversations.id }).from(conversations).where(eq(conversations.status, "open")),
+    db.select({ id: callLogs.id }).from(callLogs),
+    db.select({ id: invitations.id }).from(invitations).where(eq(invitations.status, "active")),
+    db.select({ id: invitations.id }).from(invitations).where(eq(invitations.status, "used")),
+  ]);
+  return { customers: allContacts.length, requests: allRequests.length, activeChats: activeChats.length, calls: allCalls.length, activeInvites: activeInvites.length, usedInvites: usedInvites.length };
 }

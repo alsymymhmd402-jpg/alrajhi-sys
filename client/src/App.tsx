@@ -18,8 +18,13 @@ function Router() {
       <Route path={"/invite/:code"} component={InviteGuest} />
       <Route path={"/dashboard"} component={Dashboard} />
       <Route path={"/dashboard/contacts"} component={Dashboard} />
+      <Route path={"/dashboard/requests"} component={Dashboard} />
+      <Route path={"/dashboard/chats"} component={Dashboard} />
       <Route path={"/dashboard/invitations"} component={Dashboard} />
       <Route path={"/dashboard/calls"} component={Dashboard} />
+      <Route path={"/dashboard/voice-ai"} component={Dashboard} />
+      <Route path={"/dashboard/voice-models"} component={Dashboard} />
+      <Route path={"/dashboard/settings"} component={Dashboard} />
       <Route path={"/dashboard/archive"} component={Dashboard} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

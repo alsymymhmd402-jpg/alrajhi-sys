@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Loader2, SendHorizontal } from "lucide-react";
+import { FileText, Loader2, Paperclip, SendHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 export type SupportMessageVisual = {
@@ -11,14 +11,24 @@ export type SupportMessageVisual = {
   createdAt: Date | string;
 };
 
+export type SupportAttachmentVisual = {
+  id: number;
+  messageId: number;
+  url: string;
+  fileName: string;
+  mimeType: string;
+};
+
 type SupportChatThreadProps = {
   messages: SupportMessageVisual[];
+  attachments?: SupportAttachmentVisual[];
   viewer: "guest" | "owner";
   title: string;
   subtitle: string;
   disabled?: boolean;
   isSending?: boolean;
   onSend: (content: string) => void;
+  onSendAttachment?: (file: File, caption?: string) => void;
 };
 
 const timeFormatter = new Intl.DateTimeFormat("ar-EG", {
@@ -28,15 +38,18 @@ const timeFormatter = new Intl.DateTimeFormat("ar-EG", {
 
 export function SupportChatThread({
   messages,
+  attachments = [],
   viewer,
   title,
   subtitle,
   disabled = false,
   isSending = false,
   onSend,
+  onSendAttachment,
 }: SupportChatThreadProps) {
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -69,13 +82,15 @@ export function SupportChatThread({
           <div className="flex flex-col gap-4">
             {messages.map(message => {
               const isMine = message.sender === viewer;
+              const messageAttachments = attachments.filter(attachment => attachment.messageId === message.id);
               return (
                 <article key={message.id} className={cn("flex max-w-[85%] flex-col gap-1", isMine ? "self-start items-start" : "self-end items-end")}>
                   <div className={cn("rounded-2xl px-4 py-3 text-sm leading-7 shadow-sm", isMine ? "rounded-tr-md bg-blue-600 text-white" : "rounded-tl-md bg-slate-100 text-slate-700")}>
                     {message.content}
+                    {messageAttachments.map(attachment => attachment.mimeType.startsWith("image/") ? <a key={attachment.id} href={attachment.url} target="_blank" rel="noreferrer" className="mt-3 block overflow-hidden rounded-xl border border-white/20"><img src={attachment.url} alt={attachment.fileName} className="max-h-64 w-full object-cover" /></a> : <a key={attachment.id} href={attachment.url} target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-2 rounded-xl bg-black/10 px-3 py-2 text-xs underline"><FileText className="size-4" />{attachment.fileName}</a>)}
                   </div>
                   <time className="px-1 text-[11px] text-slate-400">
-                    {timeFormatter.format(new Date(message.createdAt))}
+                    {timeFormatter.format(new Date(message.createdAt))}{isMine ? " · تم الحفظ" : ""}
                   </time>
                 </article>
               );
@@ -88,6 +103,7 @@ export function SupportChatThread({
       <form onSubmit={submit} className="border-t border-blue-50 bg-white p-4 sm:p-5">
         {disabled && <p className="mb-3 rounded-xl bg-slate-100 px-3 py-2 text-xs text-slate-500">هذه المحادثة مغلقة ولا تستقبل رسائل جديدة.</p>}
         <div className="flex items-end gap-3">
+          {onSendAttachment && <><input ref={fileInputRef} type="file" accept="image/*,application/pdf,text/*" className="hidden" onChange={event => { const file = event.target.files?.[0]; if (file) onSendAttachment(file); event.currentTarget.value = ""; }} /><Button type="button" variant="outline" size="icon" disabled={disabled || isSending} onClick={() => fileInputRef.current?.click()} className="size-11 shrink-0 rounded-2xl border-slate-200"><Paperclip className="size-4" /><span className="sr-only">إرفاق ملف</span></Button></>}
           <Textarea
             value={draft}
             onChange={event => setDraft(event.target.value)}
