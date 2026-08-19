@@ -1,11 +1,4 @@
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Sidebar,
   SidebarContent,
@@ -19,13 +12,10 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Archive, Bot, ClipboardList, LayoutDashboard, Link2, LogOut, MessageSquareText, PanelRight, PhoneCall, Settings2, UsersRound, Waves } from "lucide-react";
+import { Archive, Bot, ClipboardList, LayoutDashboard, Link2, MessageSquareText, PanelRight, PhoneCall, Settings2, UsersRound, Waves } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
-import { Button } from "./ui/button";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "لوحة التحكم", path: "/" },
@@ -54,48 +44,9 @@ export default function DashboardLayout({
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
-  const { loading, user } = useAuth();
-
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
-
-  if (loading) {
-    return <DashboardLayoutSkeleton />
-  }
-
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
-          <div className="flex flex-col items-center gap-6" dir="rtl">
-            <h1 className="text-2xl font-semibold tracking-tight text-center">دخول فريق الدعم</h1>
-            <p className="text-sm text-muted-foreground text-center max-w-sm">
-              تتطلب لوحة المحادثات تسجيل دخول المالك أو عضو فريق الدعم المصرّح له.
-            </p>
-          </div>
-          <Button
-            onClick={() => startLogin()}
-            size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
-          >
-            تسجيل الدخول
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (user.role !== "admin") {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-blue-50 p-6" dir="rtl">
-        <section className="max-w-md rounded-3xl border border-blue-100 bg-white p-8 text-center shadow-xl shadow-blue-100">
-          <h1 className="text-xl font-bold text-slate-900">هذه مساحة المالك فقط</h1>
-          <p className="mt-3 text-sm leading-7 text-slate-500">لا يمكن الوصول إلى غرفة العمليات إلا من حساب المالك أو عضو فريق دعم مخوّل.</p>
-        </section>
-      </div>
-    );
-  }
 
   return (
     <SidebarProvider
@@ -121,7 +72,6 @@ function DashboardLayoutContent({
   children,
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
-  const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -216,36 +166,10 @@ function DashboardLayoutContent({
           </SidebarContent>
 
           <SidebarFooter className="p-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-right group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <Avatar className="h-9 w-9 border shrink-0">
-                    <AvatarFallback className="text-xs font-medium">
-                      {user?.name?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium truncate leading-none">
-                      {user?.name || "-"}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate mt-1.5">
-                      {user?.email || "-"}
-                    </p>
-                  </div>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
-                <div dir="rtl">
-                  <DropdownMenuItem
-                    onClick={logout}
-                    className="cursor-pointer text-destructive focus:text-destructive"
-                  >
-                    <LogOut className="ml-2 h-4 w-4" />
-                    <span>تسجيل الخروج</span>
-                  </DropdownMenuItem>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-3 rounded-lg px-1 py-1 w-full text-right group-data-[collapsible=icon]:justify-center">
+              <Avatar className="h-9 w-9 border shrink-0"><AvatarFallback className="text-xs font-medium">VC</AvatarFallback></Avatar>
+              <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden"><p className="text-sm font-medium truncate leading-none">غرفة العمليات المباشرة</p><p className="text-xs text-muted-foreground truncate mt-1.5">إدارة Voice Circle</p></div>
+            </div>
           </SidebarFooter>
         </Sidebar>
         <div

@@ -9,9 +9,9 @@ const guestContext: TrpcContext = {
 };
 
 describe("فصل المالك والضيف", () => {
-  it("يمنع المستخدم غير الإداري من الوصول إلى غرفة العمليات", async () => {
-    const caller = appRouter.createCaller(guestContext);
-    await expect(caller.operations.summary()).rejects.toMatchObject({ code: "FORBIDDEN" });
+  it("يفتح ملخص غرفة العمليات مباشرة من دون جلسة مالك", async () => {
+    const caller = appRouter.createCaller({ ...guestContext, user: null });
+    await expect(caller.operations.summary()).resolves.toEqual(expect.objectContaining({ customers: expect.any(Number) }));
   });
 
   it("يرفض إنشاء جلسة ضيف بلا رابط دعوة", async () => {

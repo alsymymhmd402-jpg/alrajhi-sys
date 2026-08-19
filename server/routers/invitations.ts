@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import * as db from "../db";
-import { adminProcedure, publicProcedure, router } from "../_core/trpc";
+import { publicProcedure, router } from "../_core/trpc";
 
 const invitationTypeSchema = z.enum(["reusable", "one_time"]);
 const invitationStatusSchema = z.enum(["active", "used", "revoked", "expired"]);
@@ -19,9 +19,9 @@ export const invitationsRouter = router({
     return { label: result.invitation.label, type: result.invitation.type, expiresAt: result.invitation.expiresAt };
   }),
 
-  list: adminProcedure.query(() => db.listInvitations()),
+  list: publicProcedure.query(() => db.listInvitations()),
 
-  create: adminProcedure
+  create: publicProcedure
     .input(
       z.object({
         label: z.string().trim().min(2, "اكتب اسماً للدعوة.").max(120),
@@ -29,12 +29,12 @@ export const invitationsRouter = router({
         expiresAt: z.date().optional(),
       }),
     )
-    .mutation(async ({ input, ctx }) => {
-      const invitation = await db.createInvitation({ ...input, code: nanoid(14), createdByUserId: ctx.user.id });
+    .mutation(async ({ input }) => {
+      const invitation = await db.createInvitation({ ...input, code: nanoid(14) });
       return invitation;
     }),
 
-  update: adminProcedure
+  update: publicProcedure
     .input(z.object({ id: z.number().int().positive(), label: z.string().trim().min(2).max(120).optional(), status: invitationStatusSchema.optional(), expiresAt: z.date().nullable().optional() }))
     .mutation(async ({ input }) => {
       const { id, ...changes } = input;
@@ -43,7 +43,7 @@ export const invitationsRouter = router({
       return invitation;
     }),
 
-  remove: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input }) => {
+  remove: publicProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input }) => {
     await db.deleteInvitation(input.id);
     return { success: true } as const;
   }),

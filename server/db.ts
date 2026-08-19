@@ -534,7 +534,7 @@ export async function listSafeSettings() {
   return db.select().from(systemSettings).orderBy(asc(systemSettings.settingKey));
 }
 
-export async function setSafeSetting(settingKey: string, settingValue: string, userId: number) {
+export async function setSafeSetting(settingKey: string, settingValue: string, userId: number | null) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
   await db.insert(systemSettings).values({ settingKey, settingValue, updatedByUserId: userId }).onDuplicateKeyUpdate({ set: { settingValue, updatedByUserId: userId } });

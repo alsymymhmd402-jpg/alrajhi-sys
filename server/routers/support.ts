@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import * as db from "../db";
 import { notifyOwner } from "../_core/notification";
-import { adminProcedure, publicProcedure, router } from "../_core/trpc";
+import { publicProcedure, router } from "../_core/trpc";
 import { storagePut } from "../storage";
 import { emitRealtimeMessage } from "../realtime";
 
@@ -126,7 +126,7 @@ export const supportRouter = router({
       return { message: result.message, attachment };
     }),
 
-  list: adminProcedure
+  list: publicProcedure
     .input(
       z.object({
         search: z.string().max(120).optional(),
@@ -136,9 +136,9 @@ export const supportRouter = router({
     )
     .query(({ input }) => db.listSupportConversations(input)),
 
-  stats: adminProcedure.query(() => db.getSupportStats()),
+  stats: publicProcedure.query(() => db.getSupportStats()),
 
-  ownerConversation: adminProcedure
+  ownerConversation: publicProcedure
     .input(z.object({ conversationId: z.number().int().positive() }))
     .query(async ({ input }) => {
       const conversation = await db.getSupportConversationById(input.conversationId);
@@ -149,7 +149,7 @@ export const supportRouter = router({
       return { conversation: { ...conversation, ownerUnread: false }, messages, attachments };
     }),
 
-  ownerSend: adminProcedure
+  ownerSend: publicProcedure
     .input(z.object({ conversationId: z.number().int().positive(), content: supportMessageSchema }))
     .mutation(async ({ input }) => {
       const conversation = await db.getSupportConversationById(input.conversationId);
@@ -160,7 +160,7 @@ export const supportRouter = router({
       return message;
     }),
 
-  ownerSendAttachment: adminProcedure
+  ownerSendAttachment: publicProcedure
     .input(z.object({ conversationId: z.number().int().positive() }).merge(attachmentSchema))
     .mutation(async ({ input }) => {
       const conversation = await db.getSupportConversationById(input.conversationId);
@@ -173,7 +173,7 @@ export const supportRouter = router({
       return { message, attachment };
     }),
 
-  update: adminProcedure
+  update: publicProcedure
     .input(
       z.object({
         conversationId: z.number().int().positive(),
