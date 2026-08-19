@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { FileText, Loader2, Paperclip, SendHorizontal } from "lucide-react";
+import { FileText, Loader2, Paperclip, SendHorizontal, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 export type SupportMessageVisual = {
@@ -48,6 +48,8 @@ export function SupportChatThread({
   onSendAttachment,
 }: SupportChatThreadProps) {
   const [draft, setDraft] = useState("");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -62,6 +64,28 @@ export function SupportChatThread({
     onSend(content);
     setDraft("");
   };
+
+  const chooseFile = (file?: File) => {
+    if (!file) return;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPendingFile(file);
+    setPreviewUrl(file.type.startsWith("image/") ? URL.createObjectURL(file) : null);
+  };
+
+  const clearPendingFile = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPendingFile(null);
+    setPreviewUrl(null);
+  };
+
+  const sendAttachment = () => {
+    if (!pendingFile || !onSendAttachment || disabled || isSending) return;
+    onSendAttachment(pendingFile, draft.trim() || undefined);
+    setDraft("");
+    clearPendingFile();
+  };
+
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-[0_16px_55px_-24px_rgba(30,64,175,0.3)]" dir="rtl">
@@ -102,8 +126,9 @@ export function SupportChatThread({
 
       <form onSubmit={submit} className="border-t border-blue-50 bg-white p-4 sm:p-5">
         {disabled && <p className="mb-3 rounded-xl bg-slate-100 px-3 py-2 text-xs text-slate-500">هذه المحادثة مغلقة ولا تستقبل رسائل جديدة.</p>}
+        {pendingFile && <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-3"><div className="flex min-w-0 items-center gap-3">{previewUrl ? <img src={previewUrl} alt="معاينة المرفق" className="size-12 rounded-xl object-cover" /> : <span className="flex size-12 items-center justify-center rounded-xl bg-white text-blue-600"><FileText className="size-5" /></span>}<div className="min-w-0"><p className="truncate text-sm font-semibold text-slate-700">{pendingFile.name}</p><p className="mt-1 text-xs text-slate-400">معاينة قبل الإرسال</p></div></div><div className="flex gap-2"><Button type="button" variant="outline" size="sm" onClick={clearPendingFile} className="rounded-xl"><X className="size-4" /><span className="sr-only">إزالة</span></Button><Button type="button" size="sm" onClick={sendAttachment} disabled={disabled || isSending} className="rounded-xl bg-blue-600 hover:bg-blue-700">إرسال</Button></div></div>}
         <div className="flex items-end gap-3">
-          {onSendAttachment && <><input ref={fileInputRef} type="file" accept="image/*,application/pdf,text/*" className="hidden" onChange={event => { const file = event.target.files?.[0]; if (file) onSendAttachment(file); event.currentTarget.value = ""; }} /><Button type="button" variant="outline" size="icon" disabled={disabled || isSending} onClick={() => fileInputRef.current?.click()} className="size-11 shrink-0 rounded-2xl border-slate-200"><Paperclip className="size-4" /><span className="sr-only">إرفاق ملف</span></Button></>}
+          {onSendAttachment && <><input ref={fileInputRef} type="file" accept="image/*,application/pdf,text/*" className="hidden" onChange={event => { chooseFile(event.target.files?.[0]); event.currentTarget.value = ""; }} /><Button type="button" variant="outline" size="icon" disabled={disabled || isSending} onClick={() => fileInputRef.current?.click()} className="size-11 shrink-0 rounded-2xl border-slate-200"><Paperclip className="size-4" /><span className="sr-only">إرفاق ملف</span></Button></>}
           <Textarea
             value={draft}
             onChange={event => setDraft(event.target.value)}

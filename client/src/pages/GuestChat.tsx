@@ -41,7 +41,7 @@ export default function GuestChat() {
   });
 
   useEffect(() => {
-    if (publicId && !accessToken) setLocation("/");
+    if (publicId && !accessToken) setLocation("/invite/session-unavailable");
   }, [accessToken, publicId, setLocation]);
 
   useEffect(() => {

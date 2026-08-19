@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { MissedCallNotice } from "@/components/MissedCallNotice";
 import { trpc } from "@/lib/trpc";
 import { Loader2, Mic, PhoneCall, PhoneOff, UserRound } from "lucide-react";
 import { io, Socket } from "socket.io-client";
@@ -10,6 +11,7 @@ type IncomingCall = { callId: number; conversationId: number; guestName: string 
 export function OwnerCallListener() {
   const [incoming, setIncoming] = useState<IncomingCall | null>(null);
   const [active, setActive] = useState(false);
+  const [missed, setMissed] = useState(false);
   const tokenMutation = trpc.calls.ownerRealtimeToken.useMutation({ onError: error => toast.error(error.message) });
   const iceQuery = trpc.calls.ownerIceConfig.useQuery();
   const socketRef = useRef<Socket | null>(null);
@@ -37,7 +39,7 @@ export function OwnerCallListener() {
     if (!token) return;
     const socket = io({ path: "/api/realtime", transports: ["websocket"], auth: { role: "owner", token } });
     socketRef.current = socket;
-    socket.on("call:incoming", (call: IncomingCall) => { setIncoming(call); toast.message(`مكالمة واردة من ${call.guestName}`); });
+    socket.on("call:incoming", (call: IncomingCall) => { setMissed(false); setIncoming(call); toast.message(`مكالمة واردة من ${call.guestName}`); });
     socket.on("webrtc:offer", async ({ callId, sdp }) => {
       if (!activeCallRef.current || activeCallRef.current.callId !== callId || !peerRef.current) return;
       await peerRef.current.setRemoteDescription(sdp);
@@ -47,7 +49,7 @@ export function OwnerCallListener() {
       setActive(true);
     });
     socket.on("webrtc:ice", async ({ candidate }) => { if (peerRef.current) await peerRef.current.addIceCandidate(candidate); });
-    socket.on("call:ended", ({ reason }) => { cleanup(); setIncoming(null); if (reason) toast.message(reason); });
+    socket.on("call:ended", ({ reason }) => { if (typeof reason === "string" && reason.startsWith("مكالمة فائتة")) setMissed(true); cleanup(); setIncoming(null); if (reason) toast.message(reason); });
     socket.on("connect_error", error => toast.error(error.message || "تعذّر ربط استقبال المكالمات."));
     return () => {
       socket.disconnect();
@@ -74,6 +76,7 @@ export function OwnerCallListener() {
   const reject = () => { if (incoming) socketRef.current?.emit("call:reject", { callId: incoming.callId }); setIncoming(null); };
   const end = () => { if (activeCallRef.current) socketRef.current?.emit("call:end", { callId: activeCallRef.current.callId, reason: "أنهى فريق الدعم المكالمة." }); cleanup(); setIncoming(null); };
 
+  if (!incoming && missed) return <MissedCallNotice recipient="owner" placement="owner" onClose={() => setMissed(false)} />;
   if (!incoming) return null;
   return (
     <aside className="fixed bottom-5 left-5 z-50 w-[min(360px,calc(100vw-2.5rem))] rounded-3xl border border-blue-200 bg-white p-5 shadow-2xl shadow-blue-300/30" dir="rtl">

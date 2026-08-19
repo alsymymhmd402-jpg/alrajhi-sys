@@ -553,3 +553,20 @@ export async function getOperationsSummary() {
   ]);
   return { customers: allContacts.length, requests: allRequests.length, activeChats: activeChats.length, calls: allCalls.length, activeInvites: activeInvites.length, usedInvites: usedInvites.length };
 }
+
+export async function getOperationsActivity() {
+  const db = await getDb();
+  if (!db) return [];
+  const [recentContacts, recentRequests, recentMessages, recentCalls] = await Promise.all([
+    db.select({ id: contacts.id, name: contacts.displayName, at: contacts.createdAt }).from(contacts).orderBy(desc(contacts.createdAt)).limit(4),
+    db.select({ id: serviceRequests.id, number: serviceRequests.requestNumber, at: serviceRequests.createdAt }).from(serviceRequests).orderBy(desc(serviceRequests.createdAt)).limit(4),
+    db.select({ id: supportMessages.id, sender: supportMessages.sender, at: supportMessages.createdAt }).from(supportMessages).orderBy(desc(supportMessages.createdAt)).limit(4),
+    db.select({ id: callLogs.id, status: callLogs.status, at: callLogs.createdAt }).from(callLogs).orderBy(desc(callLogs.createdAt)).limit(4),
+  ]);
+  return [
+    ...recentContacts.map(item => ({ id: `contact-${item.id}`, kind: "customer" as const, title: `عميل جديد: ${item.name}`, at: item.at })),
+    ...recentRequests.map(item => ({ id: `request-${item.id}`, kind: "request" as const, title: `طلب جديد: ${item.number}`, at: item.at })),
+    ...recentMessages.map(item => ({ id: `message-${item.id}`, kind: "message" as const, title: item.sender === "guest" ? "رسالة جديدة من عميل" : "رد جديد من فريق الدعم", at: item.at })),
+    ...recentCalls.map(item => ({ id: `call-${item.id}`, kind: "call" as const, title: `مكالمة: ${item.status}`, at: item.at })),
+  ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 10);
+}

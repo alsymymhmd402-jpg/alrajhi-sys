@@ -28,7 +28,7 @@ import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "لوحة التحكم", path: "/dashboard" },
+  { icon: LayoutDashboard, label: "لوحة التحكم", path: "/" },
   { icon: UsersRound, label: "العملاء", path: "/dashboard/contacts" },
   { icon: ClipboardList, label: "الطلبات", path: "/dashboard/requests" },
   { icon: MessageSquareText, label: "المحادثات", path: "/dashboard/chats" },
@@ -82,6 +82,17 @@ export default function DashboardLayout({
             تسجيل الدخول
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  if (user.role !== "admin") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-blue-50 p-6" dir="rtl">
+        <section className="max-w-md rounded-3xl border border-blue-100 bg-white p-8 text-center shadow-xl shadow-blue-100">
+          <h1 className="text-xl font-bold text-slate-900">هذه مساحة المالك فقط</h1>
+          <p className="mt-3 text-sm leading-7 text-slate-500">لا يمكن الوصول إلى غرفة العمليات إلا من حساب المالك أو عضو فريق دعم مخوّل.</p>
+        </section>
       </div>
     );
   }

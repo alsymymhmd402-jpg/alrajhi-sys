@@ -67,18 +67,15 @@ export const supportRouter = router({
       z.object({
         guestName: z.string().trim().min(2, "يرجى كتابة الاسم.").max(120),
         issue: supportMessageSchema,
-        inviteCode: z.string().trim().min(8).max(24).optional(),
+        inviteCode: z.string().trim().min(8).max(24),
       }).merge(guestProfileSchema),
     )
     .mutation(async ({ input }) => {
-      let invitationId: number | undefined;
-      if (input.inviteCode) {
-        const result = await db.validateInvitation(input.inviteCode);
-        if (!result.invitation || result.reason) throw new TRPCError({ code: "NOT_FOUND", message: "رابط الدعوة غير صالح أو انتهت صلاحيته." });
-        const consumed = await db.consumeInvitation(result.invitation.id);
-        if (!consumed) throw new TRPCError({ code: "NOT_FOUND", message: "تعذّر استخدام رابط الدعوة." });
-        invitationId = result.invitation.id;
-      }
+      const result = await db.validateInvitation(input.inviteCode);
+      if (!result.invitation || result.reason) throw new TRPCError({ code: "NOT_FOUND", message: "رابط الدعوة غير صالح أو انتهت صلاحيته." });
+      const consumed = await db.consumeInvitation(result.invitation.id);
+      if (!consumed) throw new TRPCError({ code: "NOT_FOUND", message: "تعذّر استخدام رابط الدعوة." });
+      const invitationId = result.invitation.id;
       const conversation = await db.createSupportConversation({
         publicId: nanoid(14),
         accessToken: nanoid(40),

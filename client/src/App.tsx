@@ -6,14 +6,14 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Dashboard from "./pages/Dashboard";
 import GuestChat from "./pages/GuestChat";
-import Home from "./pages/Home";
 import InviteGuest from "./pages/InviteGuest";
+import MissedCallPreview from "./pages/MissedCallPreview";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
+      <Route path={"/"} component={Dashboard} />
       <Route path={"/chat/:publicId"} component={GuestChat} />
       <Route path={"/invite/:code"} component={InviteGuest} />
       <Route path={"/dashboard"} component={Dashboard} />
@@ -26,6 +26,7 @@ function Router() {
       <Route path={"/dashboard/voice-models"} component={Dashboard} />
       <Route path={"/dashboard/settings"} component={Dashboard} />
       <Route path={"/dashboard/archive"} component={Dashboard} />
+      {import.meta.env.DEV && <Route path={"/_qa/missed-calls"} component={MissedCallPreview} />}
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
