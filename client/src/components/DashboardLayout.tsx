@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Sidebar,
   SidebarContent,
@@ -35,6 +35,7 @@ const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 480;
+const institutionLogo = "/manus-storage/alwaleed-philanthropies-mark_d87d264e.jpg";
 
 export default function DashboardLayout({
   children,
@@ -137,7 +138,7 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-semibold tracking-tight truncate">Voice Circle</span>
+                  <span className="font-semibold tracking-tight truncate">مراسلة المؤسسة</span>
                 </div>
               ) : null}
             </div>
@@ -168,8 +169,8 @@ function DashboardLayoutContent({
 
           <SidebarFooter className="p-3">
             <div className="flex items-center gap-3 rounded-lg px-1 py-1 w-full text-right group-data-[collapsible=icon]:justify-center">
-              <Avatar className="h-9 w-9 border shrink-0"><AvatarFallback className="text-xs font-medium">VC</AvatarFallback></Avatar>
-              <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden"><p className="text-sm font-medium truncate leading-none">غرفة العمليات المباشرة</p><p className="text-xs text-muted-foreground truncate mt-1.5">إدارة Voice Circle</p></div>
+              <Avatar className="h-9 w-9 border shrink-0"><AvatarImage src={institutionLogo} alt="مؤسسة الوليد بن طلال الإنسانية" /><AvatarFallback className="text-xs font-medium">م</AvatarFallback></Avatar>
+              <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden"><p className="text-sm font-medium truncate leading-none">غرفة العمليات المباشرة</p><p className="text-xs text-muted-foreground truncate mt-1.5">إدارة مراسلة المؤسسة</p></div>
             </div>
           </SidebarFooter>
         </Sidebar>
