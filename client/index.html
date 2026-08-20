@@ -15,9 +15,11 @@
       (function () {
         var path = window.location.pathname;
         var client = /^\/(invite|client|chat)\//.test(path);
+        var clientMatch = path.match(/^\/client\/([^/]+)(?:\/(?:chat|privacy))?$/);
+        var clientStart = clientMatch ? '/client/' + clientMatch[1] : '';
         document.title = client ? 'مراسلة المؤسسة' : 'غرفة عمليات المؤسسة';
         document.querySelector('meta[name="theme-color"]').setAttribute('content', client ? '#075e54' : '#155eef');
-        document.getElementById('app-manifest').setAttribute('href', client ? '/manifest-client.webmanifest?start=' + encodeURIComponent(path) : '/manifest-owner.webmanifest');
+        document.getElementById('app-manifest').setAttribute('href', client ? '/manifest-client.webmanifest' + (clientStart ? '?start=' + encodeURIComponent(clientStart) : '') : '/manifest-owner.webmanifest');
       })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />

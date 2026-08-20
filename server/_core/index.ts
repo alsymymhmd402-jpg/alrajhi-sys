@@ -34,11 +34,12 @@ async function startServer() {
   const server = createServer(app);
   registerRealtimeGateway(server);
   const institutionIcon = "/manus-storage/alwaleed-philanthropies-mark_d87d264e.jpg";
-  const renderManifest = (name: string, shortName: string, startUrl: string, themeColor: string) => ({
+  const renderManifest = (id: string, name: string, shortName: string, startUrl: string, scope: string, themeColor: string) => ({
+    id,
     name,
     short_name: shortName,
     start_url: startUrl,
-    scope: "/",
+    scope,
     display: "standalone",
     background_color: "#e8efe9",
     theme_color: themeColor,
@@ -47,11 +48,11 @@ async function startServer() {
       { src: institutionIcon, sizes: "512x512", type: "image/jpeg", purpose: "any" },
     ],
   });
-  app.get("/manifest-owner.webmanifest", (_req, res) => res.type("application/manifest+json").json(renderManifest("غرفة عمليات المؤسسة", "عمليات المؤسسة", "/", "#155eef")));
+  app.get("/manifest-owner.webmanifest", (_req, res) => res.type("application/manifest+json").json(renderManifest("/voice-circle-owner", "غرفة عمليات المؤسسة", "عمليات المؤسسة", "/", "/", "#155eef")));
   app.get("/manifest-client.webmanifest", (req, res) => {
-    const requestedStart = typeof req.query.start === "string" ? req.query.start : "/";
-    const startUrl = /^\/(invite|client|chat)\//.test(requestedStart) ? requestedStart : "/";
-    res.type("application/manifest+json").json(renderManifest("مراسلة المؤسسة", "مراسلة المؤسسة", startUrl, "#075e54"));
+    const requestedStart = typeof req.query.start === "string" ? req.query.start : "/client/";
+    const startUrl = /^\/client\/[^/?#]+$/.test(requestedStart) ? requestedStart : "/client/";
+    res.type("application/manifest+json").json(renderManifest("/voice-circle-client", "مراسلة المؤسسة", "مراسلة المؤسسة", startUrl, "/client/", "#075e54"));
   });
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));

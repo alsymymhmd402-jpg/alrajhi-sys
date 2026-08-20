@@ -18,6 +18,7 @@ function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Dashboard} />
+      <Route path={"/client/:publicId/chat"} component={GuestChat} />
       <Route path={"/chat/:publicId"} component={GuestChat} />
       <Route path={"/client/:publicId"} component={ClientHome} />
       <Route path={"/client/:publicId/privacy"} component={ClientPrivacy} />

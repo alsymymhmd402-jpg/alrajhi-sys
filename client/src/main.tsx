@@ -6,15 +6,17 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { startLogin } from "./const";
+import { getClientAppStartPath, isClientExperiencePath } from "./lib/clientPwa";
 import "./index.css";
 
 const configureInstallIdentity = () => {
   const path = window.location.pathname;
-  const isClientExperience = /^\/(invite|client|chat)\//.test(path);
+  const isClientExperience = isClientExperiencePath(path);
+  const clientStart = getClientAppStartPath(path);
   document.title = isClientExperience ? "مراسلة المؤسسة" : "غرفة عمليات المؤسسة";
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", isClientExperience ? "#075e54" : "#155eef");
   const manifest = document.querySelector<HTMLLinkElement>("#app-manifest");
-  if (manifest) manifest.href = isClientExperience ? `/manifest-client.webmanifest?start=${encodeURIComponent(path)}` : "/manifest-owner.webmanifest";
+  if (manifest) manifest.href = isClientExperience ? `/manifest-client.webmanifest${clientStart ? `?start=${encodeURIComponent(clientStart)}` : ""}` : "/manifest-owner.webmanifest";
 };
 
 configureInstallIdentity();

@@ -18,9 +18,10 @@ const fileToBase64 = (file: File) => new Promise<string>((resolve, reject) => {
 });
 
 export default function GuestChat() {
-  const [, params] = useRoute("/chat/:publicId");
+  const [, legacyParams] = useRoute("/chat/:publicId");
+  const [, clientParams] = useRoute("/client/:publicId/chat");
   const [, setLocation] = useLocation();
-  const publicId = params?.publicId ?? "";
+  const publicId = clientParams?.publicId ?? legacyParams?.publicId ?? "";
   const accessToken = useMemo(() => (publicId ? getClientSession(publicId) : null), [publicId]);
   const utils = trpc.useUtils();
   const knownMessageIdsRef = useRef<Set<number> | null>(null);
