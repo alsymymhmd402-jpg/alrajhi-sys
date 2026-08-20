@@ -78,6 +78,7 @@ export const invitations = mysqlTable(
     type: mysqlEnum("type", ["reusable", "one_time"]).default("reusable").notNull(),
     status: mysqlEnum("status", ["active", "used", "revoked", "expired"]).default("active").notNull(),
     usageCount: int("usageCount").default(0).notNull(),
+    voiceModelId: int("voiceModelId"),
     expiresAt: timestamp("expiresAt"),
     lastUsedAt: timestamp("lastUsedAt"),
     createdByUserId: int("createdByUserId"),
@@ -87,6 +88,7 @@ export const invitations = mysqlTable(
   table => [
     index("invitations_status_idx").on(table.status),
     index("invitations_expires_idx").on(table.expiresAt),
+    index("invitations_voice_model_idx").on(table.voiceModelId),
   ],
 );
 
@@ -97,6 +99,7 @@ export const callLogs = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
     conversationId: int("conversationId"),
     invitationId: int("invitationId"),
+    voiceModelId: int("voiceModelId"),
     mode: mysqlEnum("mode", ["direct", "agent"]).notNull(),
     status: mysqlEnum("status", ["requested", "ringing", "connected", "ended", "failed", "cancelled"]).default("requested").notNull(),
     providerConversationId: varchar("providerConversationId", { length: 160 }),
@@ -110,6 +113,7 @@ export const callLogs = mysqlTable(
   table => [
     index("call_logs_conversation_idx").on(table.conversationId),
     index("call_logs_invitation_idx").on(table.invitationId),
+    index("call_logs_voice_model_idx").on(table.voiceModelId),
     index("call_logs_created_idx").on(table.createdAt),
   ],
 );

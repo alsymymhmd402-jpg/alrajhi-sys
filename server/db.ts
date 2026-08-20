@@ -301,6 +301,7 @@ export async function createInvitation(input: {
   code: string;
   label: string;
   type: "reusable" | "one_time";
+  voiceModelId?: number | null;
   expiresAt?: Date;
   createdByUserId?: number;
 }) {
@@ -322,6 +323,13 @@ export async function getInvitationByCode(code: string) {
   const db = await getDb();
   if (!db) return undefined;
   const rows = await db.select().from(invitations).where(eq(invitations.code, code)).limit(1);
+  return rows[0];
+}
+
+export async function getInvitationById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(invitations).where(eq(invitations.id, id)).limit(1);
   return rows[0];
 }
 
@@ -352,7 +360,7 @@ export async function consumeInvitation(invitationId: number) {
 
 export async function updateInvitation(
   id: number,
-  input: { label?: string; status?: "active" | "used" | "revoked" | "expired"; expiresAt?: Date | null },
+  input: { label?: string; status?: "active" | "used" | "revoked" | "expired"; expiresAt?: Date | null; voiceModelId?: number | null },
 ) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
@@ -370,6 +378,7 @@ export async function deleteInvitation(id: number) {
 export async function createCallLog(input: {
   conversationId?: number;
   invitationId?: number;
+  voiceModelId?: number | null;
   mode: "direct";
   status?: "requested" | "ringing" | "connected" | "ended" | "failed" | "cancelled";
 }) {
@@ -506,6 +515,20 @@ export async function listVoiceModels() {
   return db.select().from(voiceModels).orderBy(desc(voiceModels.createdAt));
 }
 
+export async function getVoiceModel(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(voiceModels).where(eq(voiceModels.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function getVoiceModelByProviderId(provider: string, voiceId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(voiceModels).where(and(eq(voiceModels.provider, provider), eq(voiceModels.voiceId, voiceId))).limit(1);
+  return rows[0];
+}
+
 export async function createVoiceModel(input: { name: string; provider: string; voiceId: string }) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
@@ -538,6 +561,13 @@ export async function setSafeSetting(settingKey: string, settingValue: string, u
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
   await db.insert(systemSettings).values({ settingKey, settingValue, updatedByUserId: userId }).onDuplicateKeyUpdate({ set: { settingValue, updatedByUserId: userId } });
+}
+
+export async function getSafeSetting(settingKey: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(systemSettings).where(eq(systemSettings.settingKey, settingKey)).limit(1);
+  return rows[0];
 }
 
 export async function getOperationsSummary() {

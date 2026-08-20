@@ -16,7 +16,7 @@ export const invitationsRouter = router({
     const result = await db.validateInvitation(input.code);
     if (!result.invitation || result.reason) throw new TRPCError({ code: "NOT_FOUND", message: "رابط الدعوة غير صالح أو انتهت صلاحيته." });
     if (!canUseInvitation(result.invitation.status, result.invitation.expiresAt)) throw new TRPCError({ code: "NOT_FOUND", message: "رابط الدعوة غير صالح أو انتهت صلاحيته." });
-    return { label: result.invitation.label, type: result.invitation.type, expiresAt: result.invitation.expiresAt };
+    return { label: result.invitation.label, type: result.invitation.type, expiresAt: result.invitation.expiresAt, voiceModelId: result.invitation.voiceModelId };
   }),
 
   list: publicProcedure.query(() => db.listInvitations()),
@@ -26,16 +26,21 @@ export const invitationsRouter = router({
       z.object({
         label: z.string().trim().min(2, "اكتب اسماً للدعوة.").max(120),
         type: invitationTypeSchema,
+        voiceModelId: z.number().int().positive().nullable().optional(),
         expiresAt: z.date().optional(),
       }),
     )
     .mutation(async ({ input }) => {
+      if (input.voiceModelId) {
+        const model = await db.getVoiceModel(input.voiceModelId);
+        if (!model || model.status !== "active") throw new TRPCError({ code: "NOT_FOUND", message: "الصوت المختار غير متاح للدعوة." });
+      }
       const invitation = await db.createInvitation({ ...input, code: nanoid(14) });
       return invitation;
     }),
 
   update: publicProcedure
-    .input(z.object({ id: z.number().int().positive(), label: z.string().trim().min(2).max(120).optional(), status: invitationStatusSchema.optional(), expiresAt: z.date().nullable().optional() }))
+    .input(z.object({ id: z.number().int().positive(), label: z.string().trim().min(2).max(120).optional(), status: invitationStatusSchema.optional(), expiresAt: z.date().nullable().optional(), voiceModelId: z.number().int().positive().nullable().optional() }))
     .mutation(async ({ input }) => {
       const { id, ...changes } = input;
       const invitation = await db.updateInvitation(id, changes);
