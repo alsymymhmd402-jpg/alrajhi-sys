@@ -281,6 +281,28 @@ export const agentAlerts = mysqlTable(
   table => [index("agent_alerts_status_created_idx").on(table.status, table.createdAt)],
 );
 
+/** A short-lived phone verification request associated with an invite. The OTP itself is stored as a hash only. */
+export const guestPhoneChallenges = mysqlTable(
+  "guest_phone_challenges",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    invitationId: int("invitationId").notNull(),
+    phone: varchar("phone", { length: 32 }).notNull(),
+    codeHash: varchar("codeHash", { length: 180 }),
+    providerMessageId: varchar("providerMessageId", { length: 180 }),
+    status: mysqlEnum("status", ["pending", "verified", "expired", "blocked"]).default("pending").notNull(),
+    attempts: int("attempts").default(0).notNull(),
+    expiresAt: timestamp("expiresAt").notNull(),
+    verifiedAt: timestamp("verifiedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("guest_phone_challenges_invite_phone_idx").on(table.invitationId, table.phone),
+    index("guest_phone_challenges_status_expiry_idx").on(table.status, table.expiresAt),
+  ],
+);
+
 export type Conversation = typeof conversations.$inferSelect;
 export type SupportMessage = typeof supportMessages.$inferSelect;
 export type ConversationStatus = Conversation["status"];
@@ -295,3 +317,4 @@ export type AgentThread = typeof agentThreads.$inferSelect;
 export type AgentMessage = typeof agentMessages.$inferSelect;
 export type AgentProposal = typeof agentProposals.$inferSelect;
 export type AgentAlert = typeof agentAlerts.$inferSelect;
+export type GuestPhoneChallenge = typeof guestPhoneChallenges.$inferSelect;

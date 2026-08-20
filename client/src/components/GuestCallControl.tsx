@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 type CallStatus = "idle" | "requesting" | "ringing" | "connecting" | "connected" | "reconnecting" | "failed" | "missed" | "ended";
 
-export function GuestCallControl({ publicId, accessToken, disabled }: { publicId: string; accessToken: string; disabled?: boolean }) {
+export function GuestCallControl({ publicId, accessToken, disabled, compact = false }: { publicId: string; accessToken: string; disabled?: boolean; compact?: boolean }) {
   const [status, setStatus] = useState<CallStatus>("idle");
   const [muted, setMuted] = useState(false);
   const [durationSeconds, setDurationSeconds] = useState(0);
@@ -106,6 +106,7 @@ export function GuestCallControl({ publicId, accessToken, disabled }: { publicId
   };
 
   if (status === "idle" || status === "ended" || status === "missed") {
+    if (compact) return <Button onClick={beginCall} disabled={disabled || createCall.isPending || iceQuery.isLoading} variant="ghost" size="icon" className="size-9 text-white hover:bg-white/15 hover:text-white" aria-label="بدء مكالمة صوتية"><Phone className="size-5" /></Button>;
     return <div className="flex items-center gap-2">{status === "missed" && <span className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">مكالمة فائتة</span>}<Button onClick={beginCall} disabled={disabled || createCall.isPending || iceQuery.isLoading} className="rounded-xl bg-blue-600 hover:bg-blue-700"><Phone className="ml-2 size-4" />{status === "missed" ? "إعادة الاتصال" : "اتصال صوتي بالدعم"}</Button></div>;
   }
 

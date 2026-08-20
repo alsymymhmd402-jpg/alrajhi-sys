@@ -5,6 +5,9 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Dashboard from "./pages/Dashboard";
+import ClientHome from "./pages/ClientHome";
+import ClientDemo from "./pages/ClientDemo";
+import ClientDemoChat from "./pages/ClientDemoChat";
 import GuestChat from "./pages/GuestChat";
 import InviteGuest from "./pages/InviteGuest";
 import MissedCallPreview from "./pages/MissedCallPreview";
@@ -15,6 +18,9 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Dashboard} />
       <Route path={"/chat/:publicId"} component={GuestChat} />
+      <Route path={"/client/:publicId"} component={ClientHome} />
+      <Route path={"/client-demo"} component={ClientDemo} />
+      <Route path={"/client-demo/chat"} component={ClientDemoChat} />
       <Route path={"/invite/:code"} component={InviteGuest} />
       <Route path={"/dashboard"} component={Dashboard} />
       <Route path={"/dashboard/contacts"} component={Dashboard} />

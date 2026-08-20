@@ -30,7 +30,7 @@ const attachmentSchema = z.object({
 export const canReplyToConversation = (status: z.infer<typeof supportStatusSchema>) => status !== "closed";
 
 function assertAttachmentType(mimeType: string) {
-  const allowed = mimeType.startsWith("image/") || mimeType === "application/pdf" || mimeType.startsWith("text/");
+  const allowed = mimeType.startsWith("image/") || mimeType === "application/pdf" || mimeType.startsWith("text/") || mimeType === "audio/webm" || mimeType === "audio/ogg" || mimeType === "audio/mpeg";
   if (!allowed) throw new TRPCError({ code: "BAD_REQUEST", message: "نوع الملف غير مدعوم." });
 }
 
@@ -68,11 +68,17 @@ export const supportRouter = router({
         guestName: z.string().trim().min(2, "يرجى كتابة الاسم.").max(120),
         issue: supportMessageSchema,
         inviteCode: z.string().trim().min(8).max(24),
+        phoneVerificationChallengeId: z.number().int().positive(),
       }).merge(guestProfileSchema),
     )
     .mutation(async ({ input }) => {
       const result = await db.validateInvitation(input.inviteCode);
       if (!result.invitation || result.reason) throw new TRPCError({ code: "NOT_FOUND", message: "رابط الدعوة غير صالح أو انتهت صلاحيته." });
+      if (!input.phone) throw new TRPCError({ code: "BAD_REQUEST", message: "يتطلب فتح المراسلة رقم هاتف موثق." });
+      const phoneChallenge = await db.getLatestGuestPhoneChallenge(result.invitation.id, input.phone);
+      if (!phoneChallenge || phoneChallenge.id !== input.phoneVerificationChallengeId || phoneChallenge.status !== "verified") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "تحقق رقم الهاتف مطلوب قبل فتح المراسلة." });
+      }
       const consumed = await db.consumeInvitation(result.invitation.id);
       if (!consumed) throw new TRPCError({ code: "NOT_FOUND", message: "تعذّر استخدام رابط الدعوة." });
       const invitationId = result.invitation.id;

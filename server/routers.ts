@@ -6,6 +6,7 @@ import { callsRouter } from "./routers/calls";
 import { agentRouter } from "./routers/agent";
 import { contactsRouter } from "./routers/contacts";
 import { invitationsRouter } from "./routers/invitations";
+import { guestPortalRouter } from "./routers/guestPortal";
 import { operationsRouter } from "./routers/operations";
 import { requestsRouter } from "./routers/requests";
 import { supportRouter } from "./routers/support";
@@ -26,6 +27,7 @@ export const appRouter = router({
   }),
   agent: agentRouter,
   support: supportRouter,
+  guestPortal: guestPortalRouter,
   invitations: invitationsRouter,
   calls: callsRouter,
   contacts: contactsRouter,

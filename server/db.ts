@@ -10,6 +10,7 @@ import {
   conversations,
   ConversationStatus,
   invitations,
+  guestPhoneChallenges,
   guestSessions,
   InsertUser,
   messageAttachments,
@@ -674,6 +675,29 @@ export async function updateAgentAlert(id: number, input: { status: "open" | "di
   if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
   await db.update(agentAlerts).set(input).where(eq(agentAlerts.id, id));
   const rows = await db.select().from(agentAlerts).where(eq(agentAlerts.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function createGuestPhoneChallenge(input: { invitationId: number; phone: string; codeHash?: string; providerMessageId?: string; expiresAt: Date }) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const inserted = await db.insert(guestPhoneChallenges).values(input);
+  const rows = await db.select().from(guestPhoneChallenges).where(eq(guestPhoneChallenges.id, Number(inserted[0].insertId))).limit(1);
+  return rows[0];
+}
+
+export async function getLatestGuestPhoneChallenge(invitationId: number, phone: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(guestPhoneChallenges).where(and(eq(guestPhoneChallenges.invitationId, invitationId), eq(guestPhoneChallenges.phone, phone))).orderBy(desc(guestPhoneChallenges.createdAt), desc(guestPhoneChallenges.id)).limit(1);
+  return rows[0];
+}
+
+export async function updateGuestPhoneChallenge(id: number, input: { status?: "pending" | "verified" | "expired" | "blocked"; attempts?: number; verifiedAt?: Date | null; providerMessageId?: string | null }) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.update(guestPhoneChallenges).set(input).where(eq(guestPhoneChallenges.id, id));
+  const rows = await db.select().from(guestPhoneChallenges).where(eq(guestPhoneChallenges.id, id)).limit(1);
   return rows[0];
 }
 
