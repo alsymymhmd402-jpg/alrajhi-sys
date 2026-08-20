@@ -195,6 +195,7 @@ function DashboardLayoutContent({
                 </div>
               </div>
             </div>
+            <button onClick={() => setLocation("/dashboard/invitations?create=1")} className="flex h-9 items-center gap-1 rounded-lg bg-blue-600 px-3 text-xs font-bold text-white shadow-sm transition-colors hover:bg-blue-700"><Link2 className="size-4" />رابط عميل</button>
           </div>
         )}
         <main className="flex-1 p-4">{children}</main>

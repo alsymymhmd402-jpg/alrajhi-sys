@@ -3,13 +3,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { Clipboard, ExternalLink, Link2, Loader2, Plus, Share2, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 
 const labels = { reusable: "قابل لإعادة الاستخدام", one_time: "مرة واحدة", active: "نشط", used: "مستخدم", revoked: "ملغى", expired: "منتهي" };
 const formatDate = (value: Date | string | null) => value ? new Intl.DateTimeFormat("ar-EG", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "دون انتهاء";
 
 export default function Invitations() {
+  const [location] = useLocation();
+  const createInputRef = useRef<HTMLInputElement>(null);
   const utils = trpc.useUtils();
   const [label, setLabel] = useState("دعوة عميل جديد");
   const [type, setType] = useState<"reusable" | "one_time">("reusable");
@@ -54,17 +57,23 @@ export default function Invitations() {
       await copyText(url);
     }
   };
+  const isCreateShortcut = location.includes("create=1");
+
+  useEffect(() => {
+    if (isCreateShortcut) createInputRef.current?.focus();
+  }, [isCreateShortcut]);
 
   return (
     <main className="mx-auto max-w-6xl" dir="rtl">
       <header className="rounded-3xl bg-gradient-to-l from-blue-700 via-blue-600 to-blue-500 px-6 py-7 text-white shadow-xl shadow-blue-200"><p className="text-xs font-semibold tracking-[0.16em] text-blue-100">ACCESS CONTROL</p><h1 className="mt-2 text-2xl font-bold">روابط الدعوة</h1><p className="mt-1 text-sm text-blue-100">أنشئ وصولاً مؤقتاً أو دائماً للعميل، وأبطله متى احتجت.</p></header>
       <section className="mt-5 rounded-3xl border border-blue-100 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center gap-2 text-slate-800"><span className="flex size-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><Plus className="size-4" /></span><h2 className="font-bold">إنشاء دعوة جديدة</h2></div>
+        <div className="mb-4 rounded-2xl bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-900"><strong>ثلاث خطوات سريعة:</strong> اكتب اسم العميل، اختر نوع الرابط، ثم اضغط <strong>«إنشاء رابط العميل»</strong> وأرسله له.</div>
         <form onSubmit={create} className="grid gap-3 lg:grid-cols-[1.4fr_0.85fr_1fr_auto]">
-          <Input value={label} onChange={event => setLabel(event.target.value)} placeholder="اسم الدعوة، مثل: عميل جديد" className="h-11 rounded-xl text-right" />
+          <Input ref={createInputRef} value={label} onChange={event => setLabel(event.target.value)} placeholder="اسم الدعوة، مثل: عميل جديد" className="h-11 rounded-xl text-right" />
           <Select value={type} onValueChange={value => setType(value as "reusable" | "one_time")}><SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger><SelectContent dir="rtl"><SelectItem value="reusable">قابل لإعادة الاستخدام</SelectItem><SelectItem value="one_time">لمرة واحدة</SelectItem></SelectContent></Select>
           <Input type="datetime-local" value={expiresAt} onChange={event => setExpiresAt(event.target.value)} className="h-11 rounded-xl" aria-label="تاريخ انتهاء اختياري" />
-          <Button type="submit" disabled={!label.trim() || createMutation.isPending} className="h-11 rounded-xl bg-blue-600 hover:bg-blue-700">{createMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <><Plus className="ml-2 size-4" />إنشاء</>}</Button>
+          <Button type="submit" disabled={!label.trim() || createMutation.isPending} className="h-11 rounded-xl bg-blue-600 font-bold hover:bg-blue-700">{createMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <><Plus className="ml-2 size-4" />إنشاء رابط العميل</>}</Button>
         </form>
         {lastCreatedUrl && <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4"><p className="text-sm font-bold text-emerald-900">رابط العميل جاهز للمشاركة</p><div className="mt-2 flex flex-col gap-2 sm:flex-row"><Input readOnly value={lastCreatedUrl} className="h-10 rounded-xl bg-white font-mono text-left text-xs" dir="ltr" /><Button variant="outline" onClick={() => copyText(lastCreatedUrl)} className="rounded-xl border-emerald-200 text-emerald-800"><Clipboard className="ml-2 size-4" />نسخ</Button><Button variant="outline" onClick={() => { const code = lastCreatedUrl.split("/").pop(); if (code) void share(code); }} className="rounded-xl border-emerald-200 text-emerald-800"><Share2 className="ml-2 size-4" />مشاركة</Button><Button asChild variant="outline" className="rounded-xl border-emerald-200 text-emerald-800"><a href={lastCreatedUrl} target="_blank" rel="noreferrer"><ExternalLink className="ml-2 size-4" />فتح</a></Button></div></div>}
       </section>
