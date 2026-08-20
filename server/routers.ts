@@ -3,6 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { callsRouter } from "./routers/calls";
+import { agentRouter } from "./routers/agent";
 import { contactsRouter } from "./routers/contacts";
 import { invitationsRouter } from "./routers/invitations";
 import { operationsRouter } from "./routers/operations";
@@ -23,6 +24,7 @@ export const appRouter = router({
       } as const;
     }),
   }),
+  agent: agentRouter,
   support: supportRouter,
   invitations: invitationsRouter,
   calls: callsRouter,

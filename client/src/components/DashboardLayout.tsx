@@ -13,7 +13,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Archive, Bot, ClipboardList, LayoutDashboard, Link2, MessageSquareText, PanelRight, PhoneCall, Settings2, UsersRound, Waves } from "lucide-react";
+import { Archive, Bot, ClipboardList, LayoutDashboard, Link2, MessageSquareText, PanelRight, PhoneCall, Settings2, Sparkles, UsersRound, Waves } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
@@ -24,6 +24,7 @@ const menuItems = [
   { icon: MessageSquareText, label: "المحادثات", path: "/dashboard/chats" },
   { icon: Link2, label: "روابط الدعوة", path: "/dashboard/invitations" },
   { icon: PhoneCall, label: "سجل المكالمات", path: "/dashboard/calls" },
+  { icon: Sparkles, label: "وكيل التطبيق", path: "/dashboard/app-agent" },
   { icon: Bot, label: "Voice AI", path: "/dashboard/voice-ai" },
   { icon: Waves, label: "النماذج الصوتية", path: "/dashboard/voice-models" },
   { icon: Settings2, label: "الإعدادات", path: "/dashboard/settings" },

@@ -136,6 +136,16 @@
 }
 
 @layer components {
+  html[data-agent-brand-color="enabled"] button[class*="bg-blue-"],
+  html[data-agent-brand-color="enabled"] [role="button"][class*="bg-blue-"] {
+    background-color: var(--agent-brand-primary) !important;
+  }
+
+  html[data-agent-brand-color="enabled"] button[class*="bg-blue-"]:hover,
+  html[data-agent-brand-color="enabled"] [role="button"][class*="bg-blue-"]:hover {
+    filter: brightness(0.92);
+  }
+
   /**
    * Custom container utility that centers content and adds responsive padding.
    *

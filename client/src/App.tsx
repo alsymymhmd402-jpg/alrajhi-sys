@@ -22,6 +22,7 @@ function Router() {
       <Route path={"/dashboard/chats"} component={Dashboard} />
       <Route path={"/dashboard/invitations"} component={Dashboard} />
       <Route path={"/dashboard/calls"} component={Dashboard} />
+      <Route path={"/dashboard/app-agent"} component={Dashboard} />
       <Route path={"/dashboard/voice-ai"} component={Dashboard} />
       <Route path={"/dashboard/voice-models"} component={Dashboard} />
       <Route path={"/dashboard/settings"} component={Dashboard} />

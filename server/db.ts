@@ -1,6 +1,10 @@
 import { and, asc, desc, eq, inArray, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  agentAlerts,
+  agentMessages,
+  agentProposals,
+  agentThreads,
   callLogs,
   contacts,
   conversations,
@@ -567,6 +571,109 @@ export async function getSafeSetting(settingKey: string) {
   const db = await getDb();
   if (!db) return undefined;
   const rows = await db.select().from(systemSettings).where(eq(systemSettings.settingKey, settingKey)).limit(1);
+  return rows[0];
+}
+
+export async function createAgentThread(title: string) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const inserted = await db.insert(agentThreads).values({ title: title.trim().slice(0, 180) || "محادثة وكيل التطبيق" });
+  const rows = await db.select().from(agentThreads).where(eq(agentThreads.id, Number(inserted[0].insertId))).limit(1);
+  return rows[0];
+}
+
+export async function listAgentThreads() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(agentThreads).orderBy(desc(agentThreads.updatedAt), desc(agentThreads.id));
+}
+
+export async function getAgentThread(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(agentThreads).where(eq(agentThreads.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function updateAgentThread(id: number, input: { title?: string; status?: "active" | "archived" }) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.update(agentThreads).set(input).where(eq(agentThreads.id, id));
+  return getAgentThread(id);
+}
+
+export async function listAgentMessages(threadId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(agentMessages).where(eq(agentMessages.threadId, threadId)).orderBy(asc(agentMessages.createdAt), asc(agentMessages.id));
+}
+
+export async function createAgentMessage(input: { threadId: number; role: "owner" | "assistant" | "system"; kind?: "chat" | "proposal" | "alert" | "execution"; content: string; proposalId?: number | null }) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const inserted = await db.insert(agentMessages).values({ ...input, content: input.content.trim() });
+  const id = Number(inserted[0].insertId);
+  await db.update(agentThreads).set({ updatedAt: new Date() }).where(eq(agentThreads.id, input.threadId));
+  const rows = await db.select().from(agentMessages).where(eq(agentMessages.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function createAgentProposal(input: {
+  threadId: number;
+  title: string;
+  summary: string;
+  actionType: "update_setting" | "acknowledge_alert" | "manual_development";
+  actionPayload: string;
+  impact: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const inserted = await db.insert(agentProposals).values(input);
+  const rows = await db.select().from(agentProposals).where(eq(agentProposals.id, Number(inserted[0].insertId))).limit(1);
+  return rows[0];
+}
+
+export async function listAgentProposals(threadId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(agentProposals).where(eq(agentProposals.threadId, threadId)).orderBy(desc(agentProposals.createdAt), desc(agentProposals.id));
+}
+
+export async function getAgentProposal(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(agentProposals).where(eq(agentProposals.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function updateAgentProposal(id: number, input: { status?: "draft" | "approved" | "cancelled" | "executed" | "failed"; approvedAt?: Date | null; executedAt?: Date | null; executionResult?: string | null }) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.update(agentProposals).set(input).where(eq(agentProposals.id, id));
+  return getAgentProposal(id);
+}
+
+export async function createAgentAlert(input: { severity: "info" | "warning" | "error"; title: string; detail: string; source: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const inserted = await db.insert(agentAlerts).values(input);
+  const rows = await db.select().from(agentAlerts).where(eq(agentAlerts.id, Number(inserted[0].insertId))).limit(1);
+  return rows[0];
+}
+
+export async function listAgentAlerts(status: "open" | "dismissed" | "resolved" | "all" = "open") {
+  const db = await getDb();
+  if (!db) return [];
+  return status === "all"
+    ? db.select().from(agentAlerts).orderBy(desc(agentAlerts.createdAt), desc(agentAlerts.id))
+    : db.select().from(agentAlerts).where(eq(agentAlerts.status, status)).orderBy(desc(agentAlerts.createdAt), desc(agentAlerts.id));
+}
+
+export async function updateAgentAlert(id: number, input: { status: "open" | "dismissed" | "resolved"; resolvedAt?: Date | null }) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.update(agentAlerts).set(input).where(eq(agentAlerts.id, id));
+  const rows = await db.select().from(agentAlerts).where(eq(agentAlerts.id, id)).limit(1);
   return rows[0];
 }
 
