@@ -13,6 +13,7 @@ type IncomingCall = { callId: number; conversationId: number; guestName: string 
 export function OwnerCallListener() {
   const [incoming, setIncoming] = useState<IncomingCall | null>(null);
   const [active, setActive] = useState(false);
+  const [accepting, setAccepting] = useState(false);
   const [missed, setMissed] = useState(false);
   const [voiceFallbackNotice, setVoiceFallbackNotice] = useState<string | null>(null);
   const tokenMutation = trpc.calls.ownerRealtimeToken.useMutation({ onError: error => toast.error(error.message) });
@@ -25,6 +26,7 @@ export function OwnerCallListener() {
   const conversionRef = useRef<VoiceConversionSession | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const activeCallRef = useRef<IncomingCall | null>(null);
+  const incomingCallRef = useRef<IncomingCall | null>(null);
   const ringtoneRef = useRef<RingtoneHandle | null>(null);
 
   const cleanup = () => {
@@ -38,6 +40,7 @@ export function OwnerCallListener() {
     streamRef.current = null;
     activeCallRef.current = null;
     setActive(false);
+    setAccepting(false);
     setVoiceFallbackNotice(null);
   };
 
@@ -51,17 +54,18 @@ export function OwnerCallListener() {
     if (!token) return;
     const socket = io({ path: "/api/realtime", transports: ["websocket"], auth: { role: "owner", token } });
     socketRef.current = socket;
-    socket.on("call:incoming", (call: IncomingCall) => { setMissed(false); setVoiceFallbackNotice(null); setIncoming(call); toast.message(`مكالمة واردة من ${call.guestName}`); });
+    socket.on("call:incoming", (call: IncomingCall) => { incomingCallRef.current = call; setMissed(false); setAccepting(false); setVoiceFallbackNotice(null); setIncoming(call); toast.message(`مكالمة واردة من ${call.guestName}`); });
     socket.on("webrtc:offer", async ({ callId, sdp }) => {
       if (!activeCallRef.current || activeCallRef.current.callId !== callId || !peerRef.current) return;
       await peerRef.current.setRemoteDescription(sdp);
       const answer = await peerRef.current.createAnswer();
       await peerRef.current.setLocalDescription(answer);
       socket.emit("webrtc:answer", { callId, sdp: answer });
+      setAccepting(false);
       setActive(true);
     });
     socket.on("webrtc:ice", async ({ candidate }) => { if (peerRef.current) await peerRef.current.addIceCandidate(candidate); });
-    socket.on("call:ended", ({ reason }) => { if (typeof reason === "string" && reason.startsWith("مكالمة فائتة")) setMissed(true); cleanup(); setIncoming(null); if (reason) toast.message(reason); });
+    socket.on("call:ended", ({ callId, reason }) => { const current = incomingCallRef.current ?? activeCallRef.current; if (!current || current.callId !== callId) return; if (typeof reason === "string" && reason.startsWith("مكالمة فائتة")) setMissed(true); cleanup(); incomingCallRef.current = null; setIncoming(null); if (reason) toast.message(reason); });
     socket.on("connect_error", error => toast.error(error.message || "تعذّر ربط استقبال المكالمات."));
     return () => {
       socket.disconnect();
@@ -80,6 +84,7 @@ export function OwnerCallListener() {
   const accept = async () => {
     if (!incoming || !socketRef.current) return;
     try {
+      setAccepting(true);
       ringtoneRef.current?.stop();
       ringtoneRef.current = null;
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -97,25 +102,28 @@ export function OwnerCallListener() {
       activeCallRef.current = incoming;
       socketRef.current.emit("call:accept", { callId: incoming.callId });
     } catch {
+      setAccepting(false);
       toast.error("يلزم السماح بالميكروفون لقبول المكالمة.");
     }
   };
 
-  const reject = () => { ringtoneRef.current?.stop(); ringtoneRef.current = null; if (incoming) socketRef.current?.emit("call:reject", { callId: incoming.callId }); setIncoming(null); };
-  const end = () => { if (activeCallRef.current) socketRef.current?.emit("call:end", { callId: activeCallRef.current.callId, reason: "أنهى فريق الدعم المكالمة." }); cleanup(); setIncoming(null); };
+  const reject = () => { ringtoneRef.current?.stop(); ringtoneRef.current = null; setAccepting(false); if (incoming) socketRef.current?.emit("call:reject", { callId: incoming.callId }); incomingCallRef.current = null; setIncoming(null); };
+  const end = () => { if (activeCallRef.current) socketRef.current?.emit("call:end", { callId: activeCallRef.current.callId, reason: "أنهى فريق الدعم المكالمة." }); cleanup(); incomingCallRef.current = null; setIncoming(null); };
 
   if (!incoming && missed) return <MissedCallNotice recipient="owner" placement="owner" onClose={() => setMissed(false)} />;
   if (!incoming) return null;
   return (
-    <aside className="fixed bottom-5 left-5 z-50 w-[min(360px,calc(100vw-2.5rem))] rounded-3xl border border-blue-200 bg-white p-5 shadow-2xl shadow-blue-300/30" dir="rtl">
+    <aside className="fixed bottom-5 left-5 z-50 w-[min(390px,calc(100vw-2.5rem))] overflow-hidden rounded-[1.8rem] border border-blue-200 bg-white shadow-2xl shadow-blue-300/30" dir="rtl" role="alertdialog" aria-label="مكالمة دعم واردة">
       <audio ref={remoteAudioRef} autoPlay />
-      <div className="flex items-start gap-3"><span className="flex size-11 items-center justify-center rounded-2xl bg-blue-100 text-blue-700"><PhoneCall className="size-5 animate-pulse" /></span><div><p className="font-bold text-slate-900">مكالمة دعم واردة</p><p className="mt-1 flex items-center gap-1 text-sm text-slate-500"><UserRound className="size-3.5" />{incoming.guestName}</p></div></div>
-      {activeVoice.data && <p className="mt-4 rounded-xl bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-800">سيسمع العميل صوت فريق الدعم المختار: {activeVoice.data.name}. وإذا تعذر ElevenLabs، تستمر المكالمة بالصوت الطبيعي.</p>}
-      {voiceFallbackNotice && <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">{voiceFallbackNotice}</p>}
-      <div className="mt-5 flex gap-2">
-        {active ? <Button onClick={end} className="flex-1 rounded-xl bg-red-600 hover:bg-red-700"><PhoneOff className="ml-2 size-4" />إنهاء المكالمة</Button> : <><Button onClick={accept} className="flex-1 rounded-xl bg-blue-600 hover:bg-blue-700"><Mic className="ml-2 size-4" />قبول</Button><Button variant="outline" onClick={reject} className="rounded-xl border-red-200 text-red-600"><PhoneOff className="size-4" /><span className="sr-only">رفض</span></Button></>}
+      <div className="border-b border-blue-100 bg-gradient-to-l from-[#155eef] to-[#0b5dcd] px-5 py-4 text-white"><div className="flex items-center gap-3"><span className="flex size-12 items-center justify-center rounded-2xl bg-white/15"><PhoneCall className="size-6 animate-pulse" /></span><div><p className="font-extrabold">{active ? "المكالمة متصلة" : accepting ? "جارٍ قبول المكالمة" : "مكالمة دعم واردة"}</p><p className="mt-0.5 text-xs font-medium text-blue-100">{active ? "الصوت متصل الآن" : accepting ? "يتم تجهيز الصوت والاتصال" : "يرن جهاز غرفة العمليات"}</p></div></div></div>
+      <div className="p-5"><div className="flex items-center gap-3"><span className="flex size-11 items-center justify-center rounded-full bg-slate-100 text-slate-600"><UserRound className="size-5" /></span><div><p className="text-sm text-slate-500">العميل المتصل</p><p className="mt-0.5 font-bold text-slate-900">{incoming.guestName}</p></div></div>
+      {activeVoice.data && <p className="mt-4 rounded-xl bg-violet-50 px-3 py-2 text-xs font-semibold leading-5 text-violet-800">سيسمع العميل صوت فريق الدعم المختار: {activeVoice.data.name}. وإذا تعذر ElevenLabs، تستمر المكالمة بالصوت الطبيعي.</p>}
+      {voiceFallbackNotice && <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-900">{voiceFallbackNotice}</p>}
+      <div className="mt-5 flex gap-3">
+        {active ? <Button onClick={end} className="h-13 flex-1 rounded-2xl bg-red-600 font-bold hover:bg-red-700"><PhoneOff className="ml-2 size-5" />إنهاء المكالمة</Button> : <><Button onClick={accept} disabled={accepting} className="h-13 flex-1 rounded-2xl bg-[#155eef] font-bold hover:bg-[#0b4fbd] disabled:opacity-65"><Mic className="ml-2 size-5" />{accepting ? "جارٍ القبول..." : "قبول المكالمة"}</Button><Button variant="outline" onClick={reject} disabled={accepting} className="h-13 rounded-2xl border-red-200 px-5 font-bold text-red-600 hover:bg-red-50 hover:text-red-700"><PhoneOff className="ml-1.5 size-5" />رفض</Button></>}
       </div>
       {tokenMutation.isPending && <Loader2 className="mt-3 size-4 animate-spin text-blue-600" />}
+      </div>
     </aside>
   );
 }

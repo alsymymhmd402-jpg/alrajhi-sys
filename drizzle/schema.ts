@@ -59,7 +59,7 @@ export const supportMessages = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     conversationId: int("conversationId").notNull(),
-    sender: mysqlEnum("sender", ["guest", "owner"]).notNull(),
+    sender: mysqlEnum("sender", ["guest", "owner", "system"]).notNull(),
     content: text("content").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },

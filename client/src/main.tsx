@@ -8,6 +8,18 @@ import App from "./App";
 import { startLogin } from "./const";
 import "./index.css";
 
+const configureInstallIdentity = () => {
+  const path = window.location.pathname;
+  const isClientExperience = /^\/(invite|client|chat)\//.test(path);
+  document.title = isClientExperience ? "مراسلة المؤسسة" : "غرفة عمليات المؤسسة";
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", isClientExperience ? "#075e54" : "#155eef");
+  const manifest = document.querySelector<HTMLLinkElement>("#app-manifest");
+  if (manifest) manifest.href = isClientExperience ? `/manifest-client.webmanifest?start=${encodeURIComponent(path)}` : "/manifest-owner.webmanifest";
+};
+
+configureInstallIdentity();
+if ("serviceWorker" in navigator) void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+
 const queryClient = new QueryClient();
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {

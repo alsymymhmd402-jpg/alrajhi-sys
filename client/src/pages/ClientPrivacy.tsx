@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { getClientSession } from "@/lib/clientSession";
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, LockKeyhole, MessageCircleMore, ShieldCheck, UserRoundCheck } from "lucide-react";
 import { useEffect, useMemo } from "react";
@@ -11,7 +12,7 @@ export default function ClientPrivacy() {
   const [, params] = useRoute("/client/:publicId/privacy");
   const [, setLocation] = useLocation();
   const publicId = params?.publicId ?? "";
-  const accessToken = useMemo(() => publicId ? sessionStorage.getItem(`voice-circle:${publicId}`) : null, [publicId]);
+  const accessToken = useMemo(() => publicId ? getClientSession(publicId) : null, [publicId]);
   const conversationQuery = trpc.support.guestConversation.useQuery({ publicId, accessToken: accessToken ?? "" }, { enabled: Boolean(publicId && accessToken) });
   useEffect(() => { if (!accessToken) setLocation("/invite/session-unavailable"); }, [accessToken, setLocation]);
   if (!accessToken || !conversationQuery.data) return null;
