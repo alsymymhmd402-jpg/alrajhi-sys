@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Dashboard from "./pages/Dashboard";
 import ClientHome from "./pages/ClientHome";
+import ClientPrivacy from "./pages/ClientPrivacy";
 import ClientDemo from "./pages/ClientDemo";
 import ClientDemoChat from "./pages/ClientDemoChat";
 import GuestChat from "./pages/GuestChat";
@@ -19,6 +20,7 @@ function Router() {
       <Route path={"/"} component={Dashboard} />
       <Route path={"/chat/:publicId"} component={GuestChat} />
       <Route path={"/client/:publicId"} component={ClientHome} />
+      <Route path={"/client/:publicId/privacy"} component={ClientPrivacy} />
       <Route path={"/client-demo"} component={ClientDemo} />
       <Route path={"/client-demo/chat"} component={ClientDemoChat} />
       <Route path={"/invite/:code"} component={InviteGuest} />

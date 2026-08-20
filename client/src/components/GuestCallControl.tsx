@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { startCallRingtone, type RingtoneHandle } from "@/lib/callRingtone";
 import { trpc } from "@/lib/trpc";
 import { Phone, PhoneOff, Radio, Volume2 } from "lucide-react";
 import { io, Socket } from "socket.io-client";
@@ -17,10 +18,13 @@ export function GuestCallControl({ publicId, accessToken, disabled, compact = fa
   const streamRef = useRef<MediaStream | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const callIdRef = useRef<number | null>(null);
+  const ringtoneRef = useRef<RingtoneHandle | null>(null);
   const iceQuery = trpc.calls.iceConfig.useQuery({ publicId, accessToken }, { enabled: Boolean(publicId && accessToken) });
   const createCall = trpc.calls.createDirect.useMutation({ onError: error => toast.error(error.message) });
 
   const cleanup = () => {
+    ringtoneRef.current?.stop();
+    ringtoneRef.current = null;
     peerRef.current?.close();
     peerRef.current = null;
     streamRef.current?.getTracks().forEach(track => track.stop());
@@ -44,6 +48,15 @@ export function GuestCallControl({ publicId, accessToken, disabled, compact = fa
     const started = Date.now() - durationSeconds * 1000;
     const timer = window.setInterval(() => setDurationSeconds(Math.floor((Date.now() - started) / 1000)), 1000);
     return () => window.clearInterval(timer);
+  }, [status]);
+
+  useEffect(() => {
+    if (status === "ringing") {
+      ringtoneRef.current ??= startCallRingtone("outgoing");
+      return;
+    }
+    ringtoneRef.current?.stop();
+    ringtoneRef.current = null;
   }, [status]);
 
   const setupPeer = (socket: Socket, stream: MediaStream) => {
@@ -76,6 +89,8 @@ export function GuestCallControl({ publicId, accessToken, disabled, compact = fa
       socket.on("connect", () => socket.emit("call:request", { callId: call.id }));
       socket.on("call:ringing", () => setStatus("ringing"));
       socket.on("call:accepted", async () => {
+        ringtoneRef.current?.stop();
+        ringtoneRef.current = null;
         const peer = setupPeer(socket, stream);
         const offer = await peer.createOffer();
         await peer.setLocalDescription(offer);
@@ -109,6 +124,8 @@ export function GuestCallControl({ publicId, accessToken, disabled, compact = fa
     if (compact) return <Button onClick={beginCall} disabled={disabled || createCall.isPending || iceQuery.isLoading} variant="ghost" size="icon" className="size-9 text-white hover:bg-white/15 hover:text-white" aria-label="بدء مكالمة صوتية"><Phone className="size-5" /></Button>;
     return <div className="flex items-center gap-2">{status === "missed" && <span className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">مكالمة فائتة</span>}<Button onClick={beginCall} disabled={disabled || createCall.isPending || iceQuery.isLoading} className="rounded-xl bg-blue-600 hover:bg-blue-700"><Phone className="ml-2 size-4" />{status === "missed" ? "إعادة الاتصال" : "اتصال صوتي بالدعم"}</Button></div>;
   }
+
+  if (compact) return <><audio ref={remoteAudioRef} autoPlay /><Button onClick={endCall} variant="ghost" size="icon" className="size-9 text-white hover:bg-white/15 hover:text-white" aria-label="إنهاء أو إلغاء المكالمة">{status === "ringing" || status === "connecting" || status === "requesting" ? <Radio className="size-5 animate-pulse" /> : <PhoneOff className="size-5" />}</Button></>;
 
   return (
     <div className="flex items-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">

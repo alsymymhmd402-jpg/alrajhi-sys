@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { MissedCallNotice } from "@/components/MissedCallNotice";
+import { startCallRingtone, type RingtoneHandle } from "@/lib/callRingtone";
 import { startVoiceConversion, VoiceConversionSession } from "@/lib/voiceConversion";
 import { trpc } from "@/lib/trpc";
 import { Loader2, Mic, PhoneCall, PhoneOff, UserRound } from "lucide-react";
@@ -24,8 +25,11 @@ export function OwnerCallListener() {
   const conversionRef = useRef<VoiceConversionSession | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const activeCallRef = useRef<IncomingCall | null>(null);
+  const ringtoneRef = useRef<RingtoneHandle | null>(null);
 
   const cleanup = () => {
+    ringtoneRef.current?.stop();
+    ringtoneRef.current = null;
     conversionRef.current?.stop();
     conversionRef.current = null;
     peerRef.current?.close();
@@ -64,9 +68,20 @@ export function OwnerCallListener() {
     };
   }, [tokenMutation.data?.token]);
 
+  useEffect(() => {
+    if (incoming && !active) {
+      ringtoneRef.current ??= startCallRingtone("incoming");
+      return;
+    }
+    ringtoneRef.current?.stop();
+    ringtoneRef.current = null;
+  }, [incoming, active]);
+
   const accept = async () => {
     if (!incoming || !socketRef.current) return;
     try {
+      ringtoneRef.current?.stop();
+      ringtoneRef.current = null;
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       const peer = new RTCPeerConnection({ iceServers: iceQuery.data?.iceServers as RTCIceServer[] | undefined });
@@ -86,7 +101,7 @@ export function OwnerCallListener() {
     }
   };
 
-  const reject = () => { if (incoming) socketRef.current?.emit("call:reject", { callId: incoming.callId }); setIncoming(null); };
+  const reject = () => { ringtoneRef.current?.stop(); ringtoneRef.current = null; if (incoming) socketRef.current?.emit("call:reject", { callId: incoming.callId }); setIncoming(null); };
   const end = () => { if (activeCallRef.current) socketRef.current?.emit("call:end", { callId: activeCallRef.current.callId, reason: "أنهى فريق الدعم المكالمة." }); cleanup(); setIncoming(null); };
 
   if (!incoming && missed) return <MissedCallNotice recipient="owner" placement="owner" onClose={() => setMissed(false)} />;

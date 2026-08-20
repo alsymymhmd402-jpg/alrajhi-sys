@@ -4,7 +4,7 @@ import { GuestIncomingCall } from "@/components/GuestIncomingCall";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { Loader2, MessageCircleMore } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { useLocation, useRoute } from "wouter";
 import { io } from "socket.io-client";
@@ -22,6 +22,7 @@ export default function GuestChat() {
   const publicId = params?.publicId ?? "";
   const accessToken = useMemo(() => (publicId ? sessionStorage.getItem(`voice-circle:${publicId}`) : null), [publicId]);
   const utils = trpc.useUtils();
+  const knownMessageIdsRef = useRef<Set<number> | null>(null);
   const conversationQuery = trpc.support.guestConversation.useQuery(
     { publicId, accessToken: accessToken ?? "" },
     { enabled: Boolean(publicId && accessToken), refetchInterval: 2500 },
@@ -49,6 +50,18 @@ export default function GuestChat() {
     socket.on("connect_error", () => toast.error("تعذّر الاتصال الحي، ستستمر المحادثة عند عودة الشبكة."));
     return () => { socket.disconnect(); };
   }, [accessToken, publicId, utils]);
+
+  useEffect(() => {
+    const messages = conversationQuery.data?.messages;
+    if (!messages) return;
+    if (!knownMessageIdsRef.current) {
+      knownMessageIdsRef.current = new Set(messages.map(message => message.id));
+      return;
+    }
+    const newOwnerMessages = messages.filter(message => !knownMessageIdsRef.current?.has(message.id) && message.sender === "owner");
+    if (newOwnerMessages.length) toast.success("رسالة جديدة من خدمة العملاء", { description: newOwnerMessages.at(-1)?.content.slice(0, 90) });
+    knownMessageIdsRef.current = new Set(messages.map(message => message.id));
+  }, [conversationQuery.data?.messages]);
 
   if (!accessToken) return null;
 
