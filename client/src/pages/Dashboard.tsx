@@ -38,7 +38,9 @@ function StatusBadge({ status }: { status: "open" | "in_progress" | "closed" }) 
 
 function InboxContent() {
   const [location] = useLocation();
-  const isArchive = location === "/dashboard/archive";
+  const [pathname, queryString = ""] = location.split("?");
+  const requestedConversationId = Number(new URLSearchParams(queryString).get("conversation")) || null;
+  const isArchive = pathname === "/dashboard/archive";
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -49,9 +51,11 @@ function InboxContent() {
   const conversationQuery = trpc.support.ownerConversation.useQuery({ conversationId: activeId ?? 0 }, { enabled: activeId !== null, refetchInterval: 2500 });
 
   useEffect(() => {
-    const firstId = listQuery.data?.[0]?.id ?? null;
-    if (!activeId || !listQuery.data?.some(item => item.id === activeId)) setActiveId(firstId);
-  }, [activeId, listQuery.data]);
+    const requestedIsAvailable = requestedConversationId && listQuery.data?.some(item => item.id === requestedConversationId);
+    const fallbackId = listQuery.data?.[0]?.id ?? null;
+    const nextId = requestedIsAvailable ? requestedConversationId : fallbackId;
+    if (!activeId || !listQuery.data?.some(item => item.id === activeId) || requestedIsAvailable && activeId !== requestedConversationId) setActiveId(nextId);
+  }, [activeId, listQuery.data, requestedConversationId]);
 
   const refresh = useCallback(() => {
     utils.support.list.invalidate();
@@ -172,6 +176,7 @@ function InboxContent() {
 
 export default function Dashboard() {
   const [location] = useLocation();
-  const content = location === "/dashboard/contacts" ? <Contacts /> : location === "/dashboard/requests" ? <Requests /> : location === "/dashboard/chats" || location === "/dashboard/archive" ? <InboxContent /> : location === "/dashboard/invitations" ? <Invitations /> : location === "/dashboard/calls" ? <CallLogs /> : location === "/dashboard/voice-ai" ? <VoiceStatus /> : location === "/dashboard/voice-models" ? <VoiceModels /> : location === "/dashboard/settings" ? <Settings /> : <OperationsDashboard />;
+  const pathname = location.split("?")[0];
+  const content = pathname === "/dashboard/contacts" ? <Contacts /> : pathname === "/dashboard/requests" ? <Requests /> : pathname === "/dashboard/chats" || pathname === "/dashboard/archive" ? <InboxContent /> : pathname === "/dashboard/invitations" ? <Invitations /> : pathname === "/dashboard/calls" ? <CallLogs /> : pathname === "/dashboard/voice-ai" ? <VoiceStatus /> : pathname === "/dashboard/voice-models" ? <VoiceModels /> : pathname === "/dashboard/settings" ? <Settings /> : <OperationsDashboard />;
   return <DashboardLayout>{content}<OwnerCallListener /></DashboardLayout>;
 }

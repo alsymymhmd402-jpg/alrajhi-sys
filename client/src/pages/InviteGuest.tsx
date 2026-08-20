@@ -14,7 +14,14 @@ export default function InviteGuest() {
   const createMutation = trpc.support.create.useMutation({ onSuccess: ({ publicId, accessToken }) => { sessionStorage.setItem(`voice-circle:${publicId}`, accessToken); setLocation(`/chat/${publicId}`); }, onError: error => toast.error(error.message) });
   const experience = experienceQuery.data; const platformName = experience?.platform_name || "Voice Circle"; const ownerName = experience?.owner_name || "فريق الدعم"; const ownerAvatar = experience?.owner_avatar_url; const welcome = experience?.welcome_message || "نجهّز مساحة دعم آمنة لك"; const requireEmail = experience?.guest_require_email !== "false"; const showPhone = experience?.guest_show_phone !== "false"; const showExtra = experience?.guest_show_extra_data !== "false";
   useEffect(() => { if (!previewQuery.data || introDone) return; const started = Date.now(); const timer = window.setInterval(() => { const next = Math.min(100, Math.round(((Date.now() - started) / 3200) * 100)); setProgress(next); if (next === 100) { window.clearInterval(timer); setIntroDone(true); } }, 40); return () => window.clearInterval(timer); }, [introDone, previewQuery.data]);
-  useEffect(() => { const timer = window.setTimeout(() => setPreviewTimedOut(true), 4000); return () => window.clearTimeout(timer); }, [code]);
+  useEffect(() => {
+    if (previewQuery.data) {
+      setPreviewTimedOut(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setPreviewTimedOut(true), 4000);
+    return () => window.clearTimeout(timer);
+  }, [code, previewQuery.data]);
   const chooseAvatar = (file?: File) => { if (!file) return; if (!file.type.startsWith("image/") || file.size > 2 * 1024 * 1024) { toast.error("اختر صورة لا تتجاوز 2 ميغابايت."); return; } const reader = new FileReader(); reader.onload = () => setAvatar({ fileName: file.name, mimeType: file.type, base64: String(reader.result).split(",")[1] ?? "" }); reader.readAsDataURL(file); };
   if (!previewQuery.isFetched && !previewTimedOut) return <div className="flex min-h-screen items-center justify-center bg-blue-50"><Loader2 className="size-7 animate-spin text-blue-600" /></div>;
   if (previewQuery.isError || !previewQuery.data || previewTimedOut) return <main className="flex min-h-screen items-center justify-center bg-blue-50 p-4" dir="rtl"><section className="max-w-md rounded-3xl bg-white p-8 text-center shadow-xl shadow-blue-100"><Link2 className="mx-auto mb-4 size-10 text-blue-600" /><h1 className="text-xl font-bold text-slate-900">رابط الدعوة غير متاح</h1><p className="mt-3 text-sm leading-7 text-slate-500">قد يكون الرابط غير صحيح أو أُلغي أو انتهت صلاحيته.</p></section></main>;
