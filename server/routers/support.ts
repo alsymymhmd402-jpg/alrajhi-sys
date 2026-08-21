@@ -21,6 +21,11 @@ const guestProfileSchema = z.object({
   avatarMimeType: z.string().trim().max(140).optional(),
   avatarBase64: z.string().max(3_000_000).optional(),
 });
+export const guestContactUpdateSchema = z.object({
+  email: z.union([z.string().trim().email("يرجى كتابة بريد إلكتروني صحيح.").max(320), z.literal("")]).optional(),
+  phone: z.string().trim().max(40).optional(),
+  extraData: z.string().trim().max(2000).optional(),
+});
 const attachmentSchema = z.object({
   fileName: z.string().trim().min(1).max(260),
   mimeType: z.string().trim().min(3).max(140),
@@ -99,6 +104,30 @@ export const supportRouter = router({
     const messages = await db.listSupportMessages(conversation.id);
     const attachments = await db.listMessageAttachments(messages.map(message => message.id));
     return { conversation, messages, attachments };
+  }),
+
+  guestProfile: publicProcedure.input(guestAccessSchema).query(async ({ input }) => {
+    const profile = await db.getGuestProfile(input.publicId, input.accessToken);
+    if (!profile) throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على ملف العميل." });
+    return profile;
+  }),
+
+  guestUpdateProfile: publicProcedure.input(guestAccessSchema.merge(guestContactUpdateSchema)).mutation(async ({ input }) => {
+    const profile = await db.updateGuestProfile({
+      publicId: input.publicId,
+      accessToken: input.accessToken,
+      email: input.email?.trim() || null,
+      phone: input.phone?.trim() || null,
+      extraData: input.extraData?.trim() || null,
+    });
+    if (!profile) throw new TRPCError({ code: "NOT_FOUND", message: "تعذّر تحديث ملف العميل." });
+    return profile;
+  }),
+
+  guestApplications: publicProcedure.input(guestAccessSchema).query(async ({ input }) => {
+    const result = await db.listGuestServiceRequests(input.publicId, input.accessToken);
+    if (!result) throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على طلبات العميل." });
+    return result;
   }),
 
   guestSend: publicProcedure

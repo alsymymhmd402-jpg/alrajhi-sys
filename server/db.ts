@@ -185,6 +185,35 @@ export async function getGuestConversation(publicId: string, accessToken: string
   return rows[0];
 }
 
+export async function getGuestProfile(publicId: string, accessToken: string) {
+  const conversation = await getGuestConversation(publicId, accessToken);
+  if (!conversation) return undefined;
+  const db = await getDb();
+  if (!db) return undefined;
+  const contact = conversation.contactId
+    ? (await db.select().from(contacts).where(eq(contacts.id, conversation.contactId)).limit(1))[0]
+    : undefined;
+  return { conversation, contact };
+}
+
+export async function updateGuestProfile(input: { publicId: string; accessToken: string; email?: string | null; phone?: string | null; extraData?: string | null }) {
+  const conversation = await getGuestConversation(input.publicId, input.accessToken);
+  if (!conversation?.contactId) return undefined;
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.update(contacts).set({ email: input.email, phone: input.phone, extraData: input.extraData, lastActivityAt: new Date() }).where(eq(contacts.id, conversation.contactId));
+  return getGuestProfile(input.publicId, input.accessToken);
+}
+
+export async function listGuestServiceRequests(publicId: string, accessToken: string) {
+  const conversation = await getGuestConversation(publicId, accessToken);
+  if (!conversation?.contactId) return undefined;
+  const db = await getDb();
+  if (!db) return undefined;
+  const requests = await db.select().from(serviceRequests).where(eq(serviceRequests.contactId, conversation.contactId)).orderBy(desc(serviceRequests.lastUpdatedAt));
+  return { conversation, requests };
+}
+
 export async function listSupportConversations(input: {
   search?: string;
   status?: ConversationStatus | "all";

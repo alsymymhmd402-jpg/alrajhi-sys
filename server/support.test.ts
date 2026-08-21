@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canReplyToConversation, supportMessageSchema, supportStatusLabels, supportStatusSchema } from "./routers/support";
+import { canReplyToConversation, guestContactUpdateSchema, supportMessageSchema, supportStatusLabels, supportStatusSchema } from "./routers/support";
 import { canStartDirectCall } from "./routers/calls";
 import { canUseInvitation } from "./routers/invitations";
 
@@ -21,6 +21,12 @@ describe("قواعد محادثات الدعم", () => {
     expect(supportMessageSchema.parse("  مرحباً، أحتاج إلى مساعدة.  ")).toBe("مرحباً، أحتاج إلى مساعدة.");
     expect(() => supportMessageSchema.parse("    ")).toThrow("لا يمكن إرسال رسالة فارغة");
     expect(() => supportMessageSchema.parse("أ".repeat(4001))).toThrow("الرسالة طويلة جداً");
+  });
+
+  it("يقبل بيانات تواصل العميل الاختيارية ويرفض البريد غير الصحيح", () => {
+    expect(guestContactUpdateSchema.parse({ email: "client@example.com", phone: "+966500000000", extraData: "أفضل التواصل عبر الرسائل" })).toMatchObject({ email: "client@example.com" });
+    expect(guestContactUpdateSchema.parse({ email: "" })).toMatchObject({ email: "" });
+    expect(() => guestContactUpdateSchema.parse({ email: "not-an-email" })).toThrow();
   });
 
   it("يعرض مسميات عربية واضحة للحالات", () => {
