@@ -6,6 +6,9 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Dashboard from "./pages/Dashboard";
 import ClientHome from "./pages/ClientHome";
+import ClientInstitution from "./pages/ClientInstitution";
+import ClientProfile from "./pages/ClientProfile";
+import ClientApplication from "./pages/ClientApplication";
 import ClientPrivacy from "./pages/ClientPrivacy";
 import ClientSessionUnavailable from "./pages/ClientSessionUnavailable";
 import ClientDemo from "./pages/ClientDemo";
@@ -21,6 +24,9 @@ function Router() {
       <Route path={"/"} component={Dashboard} />
       <Route path={"/client/access-unavailable"} component={ClientSessionUnavailable} />
       <Route path={"/client/:publicId/chat"} component={GuestChat} />
+      <Route path={"/client/:publicId/institution"} component={ClientInstitution} />
+      <Route path={"/client/:publicId/profile"} component={ClientProfile} />
+      <Route path={"/client/:publicId/application"} component={ClientApplication} />
       <Route path={"/chat/:publicId"} component={GuestChat} />
       <Route path={"/client/:publicId"} component={ClientHome} />
       <Route path={"/client/:publicId/privacy"} component={ClientPrivacy} />

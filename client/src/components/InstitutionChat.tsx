@@ -18,12 +18,13 @@ type InstitutionChatProps = {
   onSendAttachment: (file: File, caption?: string) => void;
   callControl: React.ReactNode;
   onVideoRequest: () => void;
+  footer?: React.ReactNode;
 };
 
 const logoUrl = "/manus-storage/alwaleed-philanthropies-mark_d87d264e.jpg";
 const timeFormatter = new Intl.DateTimeFormat("ar-EG", { hour: "numeric", minute: "2-digit" });
 
-export function InstitutionChat({ messages, attachments, disabled = false, isSending = false, onSend, onSendAttachment, callControl, onVideoRequest }: InstitutionChatProps) {
+export function InstitutionChat({ messages, attachments, disabled = false, isSending = false, onSend, onSendAttachment, callControl, onVideoRequest, footer }: InstitutionChatProps) {
   const [draft, setDraft] = useState("");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -86,6 +87,7 @@ export function InstitutionChat({ messages, attachments, disabled = false, isSen
         <div className="flex items-end gap-1"><Button type="button" variant="ghost" size="icon" disabled={disabled || isSending} onClick={() => fileInputRef.current?.click()} className="size-10 shrink-0 text-slate-500 hover:text-[#128c7e]" aria-label="إضافة مرفق"><Paperclip className="size-5" /></Button><input ref={fileInputRef} type="file" accept="image/*,application/pdf,text/*,audio/*" className="hidden" onChange={event => { selectFile(event.target.files?.[0]); event.currentTarget.value = ""; }} /><Button type="button" variant="ghost" size="icon" className="size-9 shrink-0 text-slate-400" aria-label="رمز تعبيري"><Smile className="size-5" /></Button><Textarea value={draft} onChange={event => setDraft(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); submit(event); } }} placeholder={disabled ? "المحادثة مغلقة" : "اكتب رسالة"} disabled={disabled || isSending || isRecording} rows={1} className="min-h-10 max-h-28 resize-none rounded-2xl border-0 bg-white px-3 py-2 text-right text-sm shadow-sm focus-visible:ring-[#128c7e]" />
           {draft.trim() ? <Button type="submit" disabled={disabled || isSending} size="icon" className="size-10 shrink-0 rounded-full bg-[#128c7e] hover:bg-[#075e54]">{isSending ? <Loader2 className="size-4 animate-spin" /> : <SendHorizontal className="size-4" />}</Button> : <Button type="button" size="icon" disabled={disabled || isSending} onClick={isRecording ? stopRecording : startRecording} className={cn("size-10 shrink-0 rounded-full", isRecording ? "bg-red-600 hover:bg-red-700" : "bg-[#128c7e] hover:bg-[#075e54]")}>{isRecording ? <Square className="size-4 fill-current" /> : <Mic className="size-5" />}</Button>}</div>
       </form>
+      {footer}
     </section>
   </main>;
 }
