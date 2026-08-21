@@ -9,6 +9,8 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerRealtimeGateway } from "../realtime";
+import { runAgentHealthReview } from "../agentHealth";
+import { sdk } from "./sdk";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -59,6 +61,17 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+  app.post("/api/scheduled/agent-health-review", async (req, res) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (!user.isCron || !user.taskUid) return res.status(403).json({ error: "cron-only" });
+      const result = await runAgentHealthReview();
+      return res.json({ ...result, taskUid: user.taskUid });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "تعذر تشغيل فحص صحة الوكيل.";
+      return res.status(500).json({ error: message, timestamp: new Date().toISOString() });
+    }
+  });
   // tRPC API
   app.use(
     "/api/trpc",

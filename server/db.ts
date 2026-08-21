@@ -699,7 +699,16 @@ export async function getAgentProposal(id: number) {
   return rows[0];
 }
 
-export async function updateAgentProposal(id: number, input: { status?: "draft" | "approved" | "cancelled" | "executed" | "failed"; approvedAt?: Date | null; executedAt?: Date | null; executionResult?: string | null }) {
+export async function updateAgentProposal(id: number, input: {
+  status?: "draft" | "approved" | "cancelled" | "executed" | "failed";
+  approvedAt?: Date | null;
+  executionStartedAt?: Date | null;
+  executedAt?: Date | null;
+  executionProgress?: number;
+  executionStage?: string | null;
+  executionResult?: string | null;
+  verificationResult?: string | null;
+}) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
   await db.update(agentProposals).set(input).where(eq(agentProposals.id, id));
@@ -720,6 +729,18 @@ export async function listAgentAlerts(status: "open" | "dismissed" | "resolved" 
   return status === "all"
     ? db.select().from(agentAlerts).orderBy(desc(agentAlerts.createdAt), desc(agentAlerts.id))
     : db.select().from(agentAlerts).where(eq(agentAlerts.status, status)).orderBy(desc(agentAlerts.createdAt), desc(agentAlerts.id));
+}
+
+export async function getOpenAgentAlertBySource(source: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select()
+    .from(agentAlerts)
+    .where(and(eq(agentAlerts.source, source), eq(agentAlerts.status, "open")))
+    .orderBy(desc(agentAlerts.createdAt), desc(agentAlerts.id))
+    .limit(1);
+  return rows[0];
 }
 
 export async function updateAgentAlert(id: number, input: { status: "open" | "dismissed" | "resolved"; resolvedAt?: Date | null }) {

@@ -4,6 +4,7 @@ import {
   createAgentProposal,
   createAgentThread,
   createAgentAlert,
+  getSafeSetting,
   getAgentProposal,
   getAgentThread,
   listAgentAlerts,
@@ -15,7 +16,7 @@ import {
   updateAgentProposal,
   updateAgentThread,
 } from "../db";
-import { allowedSettingKeys, createAgentPlan } from "../geminiAgent";
+import { allowedSettingKeys, createAgentPlan, isAllowedSettingValue } from "../geminiAgent";
 import { publicProcedure, router } from "../_core/trpc";
 
 const idInput = z.object({ id: z.number().int().positive() });
@@ -56,35 +57,58 @@ export const agentRouter = router({
     const proposal = await getAgentProposal(input.id);
     if (!proposal) throw new Error("بطاقة المعاينة غير موجودة.");
     if (proposal.status !== "draft") throw new Error("تم التعامل مع بطاقة المعاينة مسبقاً.");
-    const approved = await updateAgentProposal(proposal.id, { status: "approved", approvedAt: new Date() });
-    const payload = parsePayload(proposal.actionPayload);
+    const approved = await updateAgentProposal(proposal.id, {
+      status: "approved",
+      approvedAt: new Date(),
+      executionProgress: 8,
+      executionStage: "تمت الموافقة، جارٍ تجهيز التنفيذ",
+    });
 
     if (proposal.actionType === "manual_development") {
-      const result = "تم اعتماد طلب التطوير وتسجيله للمراجعة. لا يحرر وكيل التطبيق الشيفرة مباشرة داخل الموقع.";
+      const result = "تم اعتماد طلب التطوير وتسجيله في غرفة المراجعة. التغيير في الشيفرة يحتاج إصداراً منشوراً ولا يُنفذ من المتصفح مباشرة حفاظاً على أمان الموقع.";
+      const queued = await updateAgentProposal(proposal.id, { executionProgress: 100, executionStage: "طلب تطوير بانتظار إصدار", executionResult: result, verificationResult: "تم تسجيل الطلب للمراجعة قبل النشر." });
       await createAgentMessage({ threadId: proposal.threadId, role: "assistant", kind: "execution", content: result, proposalId: proposal.id });
-      return { proposal: approved, result, pendingManualWork: true };
+      return { proposal: queued, result, pendingManualWork: true, readyToExecute: false };
     }
-
+    await createAgentMessage({ threadId: proposal.threadId, role: "system", kind: "execution", content: "تمت الموافقة. سيبدأ الوكيل التنفيذ ثم يتحقق من النتيجة.", proposalId: proposal.id });
+    return { proposal: approved, result: "تمت الموافقة. جارٍ بدء التنفيذ…", pendingManualWork: false, readyToExecute: true };
+  }),
+  execute: publicProcedure.input(idInput).mutation(async ({ input, ctx }) => {
+    const proposal = await getAgentProposal(input.id);
+    if (!proposal) throw new Error("بطاقة المعاينة غير موجودة.");
+    if (proposal.status !== "approved") throw new Error("لا يمكن التنفيذ قبل موافقة صريحة.");
+    const startedAt = new Date();
+    await updateAgentProposal(proposal.id, { executionStartedAt: startedAt, executionProgress: 30, executionStage: "جارٍ تطبيق التغيير المعتمد" });
+    const payload = parsePayload(proposal.actionPayload);
     try {
       if (proposal.actionType === "update_setting") {
         const settingKey = String(payload.settingKey ?? "");
         const settingValue = String(payload.settingValue ?? "");
-        if (!allowedSettingKeys.includes(settingKey as typeof allowedSettingKeys[number]) || !settingValue.trim()) throw new Error("تحتوي البطاقة على إعداد غير مسموح.");
+        if (!allowedSettingKeys.includes(settingKey as typeof allowedSettingKeys[number]) || !isAllowedSettingValue(settingKey, settingValue)) throw new Error("تحتوي البطاقة على إعداد أو قيمة غير مسموحة.");
         await setSafeSetting(settingKey, settingValue.trim(), ctx.user?.id ?? null);
+        await updateAgentProposal(proposal.id, { executionProgress: 75, executionStage: "جارٍ التحقق من حفظ الإعداد" });
+        const stored = await getSafeSetting(settingKey);
+        if (stored?.settingValue !== settingValue.trim()) throw new Error("لم ينجح التحقق من حفظ الإعداد المعتمد.");
+        const verificationResult = `تم التحقق من حفظ الإعداد ${settingKey} بالقيمة المعتمدة.`;
+        const result = "اكتمل تطبيق التغيير المعتمد ويمكنك مراجعة أثره في الواجهة.";
+        const executed = await updateAgentProposal(proposal.id, { status: "executed", executedAt: new Date(), executionProgress: 100, executionStage: "اكتمل التنفيذ والتحقق", executionResult: result, verificationResult });
+        await createAgentMessage({ threadId: proposal.threadId, role: "assistant", kind: "execution", content: `${result}\n\n${verificationResult}`, proposalId: proposal.id });
+        return { proposal: executed, result, pendingManualWork: false };
       }
       if (proposal.actionType === "acknowledge_alert") {
         const alertId = Number(payload.alertId);
         const status = String(payload.status);
         if (!Number.isInteger(alertId) || !["dismissed", "resolved"].includes(status)) throw new Error("تحتوي البطاقة على تنبيه غير صالح.");
         await updateAgentAlert(alertId, { status: status as "dismissed" | "resolved", resolvedAt: status === "resolved" ? new Date() : null });
+        const result = "تم تحديث حالة التنبيه المعتمد وتسجيل النتيجة.";
+        const executed = await updateAgentProposal(proposal.id, { status: "executed", executedAt: new Date(), executionProgress: 100, executionStage: "اكتمل التنفيذ والتحقق", executionResult: result, verificationResult: "تم التحقق من إتمام إجراء التنبيه." });
+        await createAgentMessage({ threadId: proposal.threadId, role: "assistant", kind: "execution", content: result, proposalId: proposal.id });
+        return { proposal: executed, result, pendingManualWork: false };
       }
-      const result = "تم تطبيق الإجراء المعتمد وتسجيل النتيجة في هذه المحادثة.";
-      const executed = await updateAgentProposal(proposal.id, { status: "executed", executedAt: new Date(), executionResult: result });
-      await createAgentMessage({ threadId: proposal.threadId, role: "assistant", kind: "execution", content: result, proposalId: proposal.id });
-      return { proposal: executed, result, pendingManualWork: false };
+      throw new Error("هذا النوع من المقترحات يحتاج إصداراً منشوراً ولا ينفذ من المتصفح.");
     } catch (error) {
       const result = error instanceof Error ? error.message : "تعذر تطبيق الإجراء المعتمد.";
-      const failed = await updateAgentProposal(proposal.id, { status: "failed", executionResult: result });
+      const failed = await updateAgentProposal(proposal.id, { status: "failed", executedAt: new Date(), executionProgress: 100, executionStage: "تعذر التنفيذ", executionResult: result, verificationResult: "لم يكتمل التحقق بسبب فشل التنفيذ." });
       await createAgentMessage({ threadId: proposal.threadId, role: "assistant", kind: "execution", content: result, proposalId: proposal.id });
       return { proposal: failed, result, pendingManualWork: false };
     }

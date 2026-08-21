@@ -17,11 +17,19 @@ const allowedSettingKeys = [
   "guest.welcomeMessage",
 ] as const;
 
+export function isAllowedSettingValue(settingKey: string, settingValue: string) {
+  const value = settingValue.trim();
+  if (settingKey === "brand.primaryColor") return /^#[0-9a-fA-F]{6}$/.test(value);
+  if (settingKey === "brand.buttonRadius") return /^(?:[4-9]|[1-4][0-9]|50)px$/.test(value);
+  if (settingKey === "guest.welcomeMessage") return value.length >= 8 && value.length <= 320;
+  return false;
+}
+
 const agentInstructions = `أنت وكيل التطبيق الخاص بلوحة Voice Circle العربية. أجب بالعربية الفصحى الواضحة.
 أنت تُحلل الطلب وتشرح النتيجة. لا تدّعِ أنك نفذت أي تغيير، ولا تقترح تنفيذ أي شيء خارج بطاقة معاينة خاضعة لموافقة المالك.
 معرفتك المتاحة هي: لوحة التحكم، العملاء، الطلبات، المحادثات، روابط الدعوة، المكالمات، Voice AI، النماذج الصوتية والإعدادات. لا تملك أي مفاتيح API أو متغيرات بيئة أو ملفات نظام أو وصول حر إلى قاعدة البيانات.
 الإجراءات الوحيدة التي يمكن أن تكون قابلة للتنفيذ داخل الموقع هي:
-1) update_setting مع مفتاح واحد حصراً من: ${allowedSettingKeys.join(", ")}.
+1) update_setting مع مفتاح واحد حصراً من: ${allowedSettingKeys.join(", ")}. قيمة اللون يجب أن تكون #RRGGBB، ونصف قطر الزر بين 4px و50px، ورسالة الترحيب بين 8 و320 حرفاً.
 2) acknowledge_alert لتنبيه تشغيلي معروف مع alertId رقمي وحالة dismissed أو resolved.
 أما تغيير الشيفرة أو بنية الصفحات أو إضافة ميزات أو إصلاح أخطاء شيفرة فيجب أن يكون actionType = manual_development؛ اشرح أنه طلب تطوير يحتاج تنفيذ مراجَعاً خارج قائمة الإجراءات الآمنة.
 أعد JSON فقط مطابقاً للشكل: {"response":"...","proposal":null أو {"title":"...","summary":"...","actionType":"update_setting|acknowledge_alert|manual_development","actionPayload":{},"impact":"..."}}.`;
@@ -53,7 +61,7 @@ function safePlan(value: unknown): AgentPlan {
   if (actionType === "update_setting") {
     const settingKey = actionPayload.settingKey;
     const settingValue = actionPayload.settingValue;
-    if (!allowedSettingKeys.includes(settingKey as typeof allowedSettingKeys[number]) || typeof settingValue !== "string") return { response: parsed.response.trim() };
+    if (!allowedSettingKeys.includes(settingKey as typeof allowedSettingKeys[number]) || typeof settingValue !== "string" || !isAllowedSettingValue(String(settingKey), settingValue)) return { response: parsed.response.trim() };
   }
   if (actionType === "acknowledge_alert") {
     if (typeof actionPayload.alertId !== "number" || !["dismissed", "resolved"].includes(String(actionPayload.status))) return { response: parsed.response.trim() };

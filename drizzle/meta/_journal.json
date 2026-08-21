@@ -71,6 +71,13 @@
       "when": 1787202538780,
       "tag": "0009_short_bloodscream",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1787349915147,
+      "tag": "0010_fluffy_nova",
+      "breakpoints": true
     }
   ]
 }
