@@ -13,7 +13,6 @@ type RealtimeSocket = Socket & {
     callId?: number;
   };
 };
-type RealtimeMessageSender = "guest" | "owner" | "system";
 
 const ownerTokens = new Map<string, OwnerToken>();
 const guestSocketByCall = new Map<number, string>();
@@ -55,27 +54,13 @@ function chatRoom(conversationId: number) {
 export function emitChatMessageTo(
   io: Pick<Server, "to">,
   conversationId: number,
-  payload: { messageId: number; sender: RealtimeMessageSender },
+  payload: { messageId: number; sender: "guest" | "owner" },
 ) {
   io.to(chatRoom(conversationId)).emit("chat:message", payload);
 }
 
-export function emitRealtimeMessage(conversationId: number, payload: { messageId: number; sender: RealtimeMessageSender }) {
+export function emitRealtimeMessage(conversationId: number, payload: { messageId: number; sender: "guest" | "owner" }) {
   if (realtimeIo) emitChatMessageTo(realtimeIo, conversationId, payload);
-}
-
-async function recordCallSystemMessage(io: Server, call: Awaited<ReturnType<typeof db.getCallLog>>, content: string) {
-  if (!call?.conversationId) return;
-  try {
-    const message = await db.addSystemMessage(call.conversationId, content);
-    if (message) emitChatMessageTo(io, call.conversationId, { messageId: message.id, sender: "system" });
-  } catch (error) {
-    console.error("[Realtime] تعذّر حفظ رسالة نظام المكالمة:", error);
-  }
-}
-
-export function createEndedCallMessage(durationSeconds: number) {
-  return `انتهت المكالمة · المدة ${durationSeconds} ثانية`;
 }
 
 async function verifyCallAccess(socket: RealtimeSocket, callId: number) {
@@ -99,12 +84,10 @@ export function scheduleMissedCall(io: Server, callId: number) {
     const missedCallUpdate = createMissedCallUpdate();
     const reason = missedCallUpdate.failureReason;
     await db.updateCallLog(callId, missedCallUpdate);
-    await recordCallSystemMessage(io, call, "مكالمة فائتة · لم يجب الطرف الآخر خلال 30 ثانية");
     const guestSocketId = guestSocketByCall.get(callId);
     const ownerSocketId = ownerSocketByCall.get(callId);
     if (guestSocketId) io.to(guestSocketId).emit("call:ended", { callId, reason });
     if (ownerSocketId) io.to(ownerSocketId).emit("call:ended", { callId, reason });
-    io.to(OWNER_LOBBY).emit("call:ended", { callId, reason });
     if (!ownerSocketId) io.to(OWNER_LOBBY).emit("call:missed", { callId, reason });
     guestSocketByCall.delete(callId);
     ownerSocketByCall.delete(callId);
@@ -190,7 +173,6 @@ export function registerRealtimeGateway(server: HttpServer) {
       const guestSocketId = guestSocketByConversation.get(call.conversationId);
       if (!guestSocketId) {
         await db.updateCallLog(callId, { status: "failed", endedAt: new Date(), failureReason: "العميل غير متصل الآن." });
-        await recordCallSystemMessage(io, call, "لم تتم المكالمة · العميل غير متصل الآن");
         socket.emit("call:ended", { callId, reason: "العميل غير متصل الآن." });
         return;
       }
@@ -210,7 +192,6 @@ export function registerRealtimeGateway(server: HttpServer) {
       if (!call || !guestSocketId) return;
       const room = callRoom(callId);
       socket.join(room);
-      ownerSocketByCall.set(callId, socket.id);
       const guestSocket = io.sockets.sockets.get(guestSocketId) as RealtimeSocket | undefined;
       guestSocket?.join(room);
       callStartedAt.set(callId, Date.now());
@@ -225,7 +206,6 @@ export function registerRealtimeGateway(server: HttpServer) {
       const guestSocketId = guestSocketByCall.get(callId);
       if (!call) return;
       await db.updateCallLog(callId, { status: "cancelled", endedAt: new Date() });
-      await recordCallSystemMessage(io, call, "تم رفض المكالمة من فريق الدعم");
       clearRingTimer(callId);
       if (guestSocketId) io.to(guestSocketId).emit("call:ended", { callId, reason: "رفض فريق الدعم المكالمة." });
       guestSocketByCall.delete(callId);
@@ -252,7 +232,6 @@ export function registerRealtimeGateway(server: HttpServer) {
       const ownerSocketId = ownerSocketByCall.get(callId);
       if (!call) return;
       await db.updateCallLog(callId, { status: "cancelled", endedAt: new Date(), failureReason: "رفض العميل المكالمة." });
-      await recordCallSystemMessage(io, call, "تم رفض المكالمة من العميل");
       clearRingTimer(callId);
       if (ownerSocketId) io.to(ownerSocketId).emit("call:ended", { callId, reason: "رفض العميل المكالمة." });
       guestSocketByCall.delete(callId);
@@ -275,16 +254,12 @@ export function registerRealtimeGateway(server: HttpServer) {
     });
 
     socket.on("call:end", async ({ callId, reason }: { callId: number; reason?: string }) => {
-      if (!Number.isInteger(callId)) return;
-      const call = await verifyCallAccess(socket, callId);
-      if (!call) return;
+      if (!Number.isInteger(callId) || !(await verifyCallAccess(socket, callId))) return;
       const started = callStartedAt.get(callId);
       const durationSeconds = started ? Math.max(0, Math.floor((Date.now() - started) / 1000)) : 0;
       await db.updateCallLog(callId, { status: "ended", endedAt: new Date(), durationSeconds, failureReason: reason?.slice(0, 300) });
-      await recordCallSystemMessage(io, call, createEndedCallMessage(durationSeconds));
       clearRingTimer(callId);
       io.to(callRoom(callId)).emit("call:ended", { callId, reason: reason ?? "انتهت المكالمة." });
-      io.to(OWNER_LOBBY).emit("call:ended", { callId, reason: reason ?? "انتهت المكالمة." });
       guestSocketByCall.delete(callId);
       ownerSocketByCall.delete(callId);
       callStartedAt.delete(callId);

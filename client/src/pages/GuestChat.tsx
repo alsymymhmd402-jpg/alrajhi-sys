@@ -2,7 +2,6 @@ import { InstitutionChat } from "@/components/InstitutionChat";
 import { GuestCallControl } from "@/components/GuestCallControl";
 import { GuestIncomingCall } from "@/components/GuestIncomingCall";
 import { Button } from "@/components/ui/button";
-import { getClientSession } from "@/lib/clientSession";
 import { trpc } from "@/lib/trpc";
 import { Loader2, MessageCircleMore } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
@@ -18,11 +17,10 @@ const fileToBase64 = (file: File) => new Promise<string>((resolve, reject) => {
 });
 
 export default function GuestChat() {
-  const [, legacyParams] = useRoute("/chat/:publicId");
-  const [, clientParams] = useRoute("/client/:publicId/chat");
+  const [, params] = useRoute("/chat/:publicId");
   const [, setLocation] = useLocation();
-  const publicId = clientParams?.publicId ?? legacyParams?.publicId ?? "";
-  const accessToken = useMemo(() => (publicId ? getClientSession(publicId) : null), [publicId]);
+  const publicId = params?.publicId ?? "";
+  const accessToken = useMemo(() => (publicId ? sessionStorage.getItem(`voice-circle:${publicId}`) : null), [publicId]);
   const utils = trpc.useUtils();
   const knownMessageIdsRef = useRef<Set<number> | null>(null);
   const conversationQuery = trpc.support.guestConversation.useQuery(

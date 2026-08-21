@@ -1,11 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import * as db from "./db";
-import { createEndedCallMessage, createMissedCallUpdate, emitChatMessageTo, MISSED_CALL_FAILURE_REASON, MISSED_CALL_TIMEOUT_MS, scheduleMissedCall } from "./realtime";
+import { createMissedCallUpdate, emitChatMessageTo, MISSED_CALL_FAILURE_REASON, MISSED_CALL_TIMEOUT_MS, scheduleMissedCall } from "./realtime";
 
 vi.mock("./db", () => ({
   getCallLog: vi.fn(),
   updateCallLog: vi.fn(),
-  addSystemMessage: vi.fn(),
 }));
 
 describe("emitChatMessageTo", () => {
@@ -22,10 +21,6 @@ describe("emitChatMessageTo", () => {
 });
 
 describe("منطق المكالمة الفائتة", () => {
-  it("يصوغ رسالة نظام تحدد مدة المكالمة المنتهية", () => {
-    expect(createEndedCallMessage(47)).toBe("انتهت المكالمة · المدة 47 ثانية");
-  });
-
   it("يسجل حالة فشل وسبباً واضحاً بعد مهلة الرنين المحددة", () => {
     const endedAt = new Date("2026-08-19T20:00:00.000Z");
 
@@ -42,9 +37,8 @@ describe("منطق المكالمة الفائتة", () => {
     vi.useFakeTimers();
     const emit = vi.fn();
     const to = vi.fn(() => ({ emit }));
-    vi.mocked(db.getCallLog).mockResolvedValue({ status: "ringing", conversationId: 41 } as never);
+    vi.mocked(db.getCallLog).mockResolvedValue({ status: "ringing" } as never);
     vi.mocked(db.updateCallLog).mockResolvedValue(undefined as never);
-    vi.mocked(db.addSystemMessage).mockResolvedValue({ id: 902 } as never);
 
     scheduleMissedCall({ to } as never, 701);
     await vi.advanceTimersByTimeAsync(MISSED_CALL_TIMEOUT_MS);
@@ -55,7 +49,6 @@ describe("منطق المكالمة الفائتة", () => {
     }));
     expect(to).toHaveBeenCalledWith("owner:lobby");
     expect(emit).toHaveBeenCalledWith("call:missed", expect.objectContaining({ callId: 701 }));
-    expect(db.addSystemMessage).toHaveBeenCalledWith(41, expect.stringMatching(/^مكالمة فائتة/));
     vi.useRealTimers();
   });
 });

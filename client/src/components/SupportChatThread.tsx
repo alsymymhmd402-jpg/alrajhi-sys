@@ -1,12 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { FileText, Loader2, Paperclip, PhoneCall, SendHorizontal, X } from "lucide-react";
+import { FileText, Loader2, Paperclip, SendHorizontal, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 export type SupportMessageVisual = {
   id: number;
-  sender: "guest" | "owner" | "system";
+  sender: "guest" | "owner";
   content: string;
   createdAt: Date | string;
 };
@@ -105,9 +105,6 @@ export function SupportChatThread({
         ) : (
           <div className="flex flex-col gap-4">
             {messages.map(message => {
-              if (message.sender === "system") {
-                return <article key={message.id} className="flex justify-center py-1"><div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800"><PhoneCall className="size-3.5" />{message.content}<time className="mr-1 text-[10px] text-amber-700/70">{timeFormatter.format(new Date(message.createdAt))}</time></div></article>;
-              }
               const isMine = message.sender === viewer;
               const messageAttachments = attachments.filter(attachment => attachment.messageId === message.id);
               return (

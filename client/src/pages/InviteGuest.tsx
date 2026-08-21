@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
-import { saveClientSession } from "@/lib/clientSession";
 import { ArrowLeft, ArrowRight, ChevronLeft, Link2, Loader2, MessageCircleMore, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -20,7 +19,7 @@ export default function InviteGuest() {
   const [issue, setIssue] = useState("");
   const previewQuery = trpc.invitations.preview.useQuery({ code }, { enabled: Boolean(code) });
   const createConversation = trpc.support.create.useMutation({
-    onSuccess: ({ publicId, accessToken }) => { saveClientSession(publicId, accessToken); setLocation(`/client/${publicId}`); },
+    onSuccess: ({ publicId, accessToken }) => { sessionStorage.setItem(`voice-circle:${publicId}`, accessToken); setLocation(`/client/${publicId}`); },
     onError: error => toast.error(error.message),
   });
 

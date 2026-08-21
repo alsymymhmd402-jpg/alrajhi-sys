@@ -282,29 +282,6 @@ export async function addOwnerMessage(conversationId: number, content: string) {
   return messages[0];
 }
 
-/** Records an automated event such as a call ending without attributing it to either participant. */
-export async function addSystemMessage(conversationId: number, content: string) {
-  const db = await getDb();
-  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
-  const cleanContent = content.trim();
-  const inserted = await db.insert(supportMessages).values({
-    conversationId,
-    sender: "system",
-    content: cleanContent,
-  });
-  const messageId = Number(inserted[0].insertId);
-  await db
-    .update(conversations)
-    .set({ lastMessagePreview: preview(cleanContent), lastMessageAt: new Date(), ownerUnread: false })
-    .where(eq(conversations.id, conversationId));
-  const conversation = await getSupportConversationById(conversationId);
-  if (conversation?.contactId) {
-    await db.update(contacts).set({ lastActivityAt: new Date() }).where(eq(contacts.id, conversation.contactId));
-  }
-  const messages = await db.select().from(supportMessages).where(eq(supportMessages.id, messageId)).limit(1);
-  return messages[0];
-}
-
 export async function updateSupportConversation(
   conversationId: number,
   input: { status?: ConversationStatus; archived?: boolean; ownerUnread?: boolean },

@@ -6,22 +6,10 @@
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>غرفة عمليات المؤسسة</title>
-    <meta name="theme-color" content="#155eef" />
+    <title>مراسلة المؤسسة</title>
+    <meta name="theme-color" content="#075e54" />
     <link rel="icon" type="image/jpeg" href="/manus-storage/alwaleed-philanthropies-mark_d87d264e.jpg" />
     <link rel="apple-touch-icon" href="/manus-storage/alwaleed-philanthropies-mark_d87d264e.jpg" />
-    <link id="app-manifest" rel="manifest" href="/manifest-owner.webmanifest" />
-    <script>
-      (function () {
-        var path = window.location.pathname;
-        var client = /^\/(invite|client|chat)\//.test(path);
-        var clientMatch = path.match(/^\/client\/([^/]+)(?:\/(?:chat|privacy))?$/);
-        var clientStart = clientMatch ? '/client/' + clientMatch[1] : '';
-        document.title = client ? 'مراسلة المؤسسة' : 'غرفة عمليات المؤسسة';
-        document.querySelector('meta[name="theme-color"]').setAttribute('content', client ? '#075e54' : '#155eef');
-        document.getElementById('app-manifest').setAttribute('href', client ? '/manifest-client.webmanifest' + (clientStart ? '?start=' + encodeURIComponent(clientStart) : '') : '/manifest-owner.webmanifest');
-      })();
-    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
