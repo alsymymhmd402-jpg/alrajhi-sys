@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { InstallOwnerAppButton } from "@/components/InstallOwnerAppButton";
 import {
   Sidebar,
   SidebarContent,
@@ -172,6 +173,7 @@ function DashboardLayoutContent({
               <Avatar className="h-9 w-9 border shrink-0"><AvatarImage src={institutionLogo} alt="مؤسسة الوليد بن طلال الإنسانية" /><AvatarFallback className="text-xs font-medium">م</AvatarFallback></Avatar>
               <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden"><p className="text-sm font-medium truncate leading-none">غرفة العمليات المباشرة</p><p className="text-xs text-muted-foreground truncate mt-1.5">إدارة مراسلة المؤسسة</p></div>
             </div>
+            <div className="mt-3 group-data-[collapsible=icon]:hidden"><InstallOwnerAppButton /></div>
           </SidebarFooter>
         </Sidebar>
         <div

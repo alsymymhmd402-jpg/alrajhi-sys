@@ -1,0 +1,1 @@
+ALTER TABLE `support_messages` MODIFY COLUMN `sender` enum('guest','owner','system') NOT NULL;
