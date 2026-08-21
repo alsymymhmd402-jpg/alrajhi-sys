@@ -33,6 +33,10 @@ const attachmentSchema = z.object({
   caption: z.string().trim().max(1000).optional(),
 });
 export const canReplyToConversation = (status: z.infer<typeof supportStatusSchema>) => status !== "closed";
+export const getGuestProfileUpdateNotice = (guestName: string) => ({
+  title: "تحديث بيانات عميل",
+  content: `${guestName} حدّث بيانات التواصل في ملفه.`,
+});
 
 function assertAttachmentType(mimeType: string) {
   const allowed = mimeType.startsWith("image/") || mimeType === "application/pdf" || mimeType.startsWith("text/") || mimeType === "audio/webm" || mimeType === "audio/ogg" || mimeType === "audio/mpeg";
@@ -121,6 +125,8 @@ export const supportRouter = router({
       extraData: input.extraData?.trim() || null,
     });
     if (!profile) throw new TRPCError({ code: "NOT_FOUND", message: "تعذّر تحديث ملف العميل." });
+    const notice = getGuestProfileUpdateNotice(profile.conversation.guestName);
+    await ownerNotice(notice.title, notice.content);
     return profile;
   }),
 

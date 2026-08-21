@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canReplyToConversation, guestContactUpdateSchema, supportMessageSchema, supportStatusLabels, supportStatusSchema } from "./routers/support";
+import { canReplyToConversation, getGuestProfileUpdateNotice, guestContactUpdateSchema, supportMessageSchema, supportStatusLabels, supportStatusSchema } from "./routers/support";
 import { canStartDirectCall } from "./routers/calls";
 import { canUseInvitation } from "./routers/invitations";
 
@@ -27,6 +27,10 @@ describe("قواعد محادثات الدعم", () => {
     expect(guestContactUpdateSchema.parse({ email: "client@example.com", phone: "+966500000000", extraData: "أفضل التواصل عبر الرسائل" })).toMatchObject({ email: "client@example.com" });
     expect(guestContactUpdateSchema.parse({ email: "" })).toMatchObject({ email: "" });
     expect(() => guestContactUpdateSchema.parse({ email: "not-an-email" })).toThrow();
+  });
+
+  it("ينشئ إشعار تحديث ملف لا يكشف البريد أو رقم التواصل", () => {
+    expect(getGuestProfileUpdateNotice("سارة")).toEqual({ title: "تحديث بيانات عميل", content: "سارة حدّث بيانات التواصل في ملفه." });
   });
 
   it("يعرض مسميات عربية واضحة للحالات", () => {
