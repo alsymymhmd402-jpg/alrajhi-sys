@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Dashboard from "./pages/Dashboard";
 import ClientHome from "./pages/ClientHome";
 import ClientPrivacy from "./pages/ClientPrivacy";
+import ClientSessionUnavailable from "./pages/ClientSessionUnavailable";
 import ClientDemo from "./pages/ClientDemo";
 import ClientDemoChat from "./pages/ClientDemoChat";
 import GuestChat from "./pages/GuestChat";
@@ -18,6 +19,7 @@ function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Dashboard} />
+      <Route path={"/client/access-unavailable"} component={ClientSessionUnavailable} />
       <Route path={"/client/:publicId/chat"} component={GuestChat} />
       <Route path={"/chat/:publicId"} component={GuestChat} />
       <Route path={"/client/:publicId"} component={ClientHome} />

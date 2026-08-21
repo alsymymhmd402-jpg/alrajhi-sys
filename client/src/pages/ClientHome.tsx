@@ -3,8 +3,9 @@ import { InstallClientAppButton } from "@/components/InstallClientAppButton";
 import { Button } from "@/components/ui/button";
 import { getClientSession } from "@/lib/clientSession";
 import { trpc } from "@/lib/trpc";
+import ClientSessionUnavailable from "./ClientSessionUnavailable";
 import { Bell, ChevronLeft, Loader2, MessageCircle, Phone, Settings, ShieldCheck } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { toast } from "sonner";
 import { useLocation, useRoute } from "wouter";
 
@@ -18,11 +19,7 @@ export default function ClientHome() {
   const accessToken = useMemo(() => publicId ? getClientSession(publicId) : null, [publicId]);
   const conversationQuery = trpc.support.guestConversation.useQuery({ publicId, accessToken: accessToken ?? "" }, { enabled: Boolean(publicId && accessToken) });
 
-  useEffect(() => {
-    if (!accessToken) setLocation("/invite/session-unavailable");
-  }, [accessToken, setLocation]);
-
-  if (!accessToken) return null;
+  if (!accessToken) return <ClientSessionUnavailable />;
   if (conversationQuery.isLoading) return <div className="flex min-h-screen items-center justify-center bg-[#e8efe9]"><Loader2 className="size-7 animate-spin text-[#128c7e]" /></div>;
   if (conversationQuery.isError || !conversationQuery.data) return <div className="flex min-h-screen items-center justify-center bg-[#e8efe9] p-6 text-center text-sm text-slate-600">تعذّر تحميل قائمة مراسلاتك.</div>;
   const { conversation, messages } = conversationQuery.data;

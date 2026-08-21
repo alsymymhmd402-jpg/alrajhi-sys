@@ -4,6 +4,7 @@ import { GuestIncomingCall } from "@/components/GuestIncomingCall";
 import { Button } from "@/components/ui/button";
 import { getClientSession } from "@/lib/clientSession";
 import { trpc } from "@/lib/trpc";
+import ClientSessionUnavailable from "./ClientSessionUnavailable";
 import { Loader2, MessageCircleMore } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
@@ -41,10 +42,6 @@ export default function GuestChat() {
   });
 
   useEffect(() => {
-    if (publicId && !accessToken) setLocation("/invite/session-unavailable");
-  }, [accessToken, publicId, setLocation]);
-
-  useEffect(() => {
     if (!publicId || !accessToken) return;
     const socket = io({ path: "/api/realtime", transports: ["websocket"], auth: { role: "guest", publicId, accessToken } });
     socket.on("chat:message", () => utils.support.guestConversation.invalidate());
@@ -65,7 +62,7 @@ export default function GuestChat() {
     knownMessageIdsRef.current = new Set(messages.map(message => message.id));
   }, [conversationQuery.data?.messages]);
 
-  if (!accessToken) return null;
+  if (!accessToken) return <ClientSessionUnavailable />;
 
   if (conversationQuery.isLoading) {
     return <div className="flex min-h-screen items-center justify-center bg-blue-50" dir="rtl"><Loader2 className="size-7 animate-spin text-blue-600" /></div>;
