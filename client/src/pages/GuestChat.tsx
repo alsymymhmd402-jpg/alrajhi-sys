@@ -87,6 +87,7 @@ export default function GuestChat() {
     <InstitutionChat
       messages={messages}
       attachments={attachments}
+      guestName={conversation.guestName}
       disabled={conversation.status === "closed"}
       isSending={sendMutation.isPending || attachmentMutation.isPending}
       onSend={content => sendMutation.mutate({ publicId, accessToken, content })}
