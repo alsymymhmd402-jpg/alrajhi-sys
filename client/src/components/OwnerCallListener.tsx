@@ -1,11 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { MissedCallNotice } from "@/components/MissedCallNotice";
 import { startCallRingtone, type RingtoneHandle } from "@/lib/callRingtone";
-import { startVoiceConversion, VoiceConversionSession } from "@/lib/voiceConversion";
+import { startVoiceConversion, voiceFallbackNotice as createVoiceFallbackNotice, VoiceConversionSession } from "@/lib/voiceConversion";
 import { trpc } from "@/lib/trpc";
 import { Loader2, Mic, PhoneCall, PhoneOff, UserRound } from "lucide-react";
 import { io, Socket } from "socket.io-client";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type IncomingCall = { callId: number; conversationId: number; guestName: string };
@@ -93,7 +93,7 @@ export function OwnerCallListener() {
       peerRef.current = peer;
       let outgoingStream = stream;
       if (activeVoice.data) {
-        conversionRef.current = await startVoiceConversion({ inputStream: stream, modelId: activeVoice.data.id, convertChunk: payload => convertChunk.mutateAsync(payload), onError: message => { setVoiceFallbackNotice(`عاد الاتصال إلى الصوت الطبيعي. ${message}`); toast.error(`عاد الاتصال إلى الصوت الطبيعي. ${message}`); } });
+        conversionRef.current = await startVoiceConversion({ inputStream: stream, modelId: activeVoice.data.id, convertChunk: payload => convertChunk.mutateAsync(payload), onError: message => { const notice = createVoiceFallbackNotice(message); setVoiceFallbackNotice(notice); toast.error(notice); } });
         outgoingStream = conversionRef.current.stream;
       }
       outgoingStream.getTracks().forEach(track => peer.addTrack(track, outgoingStream));
@@ -118,7 +118,7 @@ export function OwnerCallListener() {
       <div className="border-b border-blue-100 bg-gradient-to-l from-[#155eef] to-[#0b5dcd] px-5 py-4 text-white"><div className="flex items-center gap-3"><span className="flex size-12 items-center justify-center rounded-2xl bg-white/15"><PhoneCall className="size-6 animate-pulse" /></span><div><p className="font-extrabold">{active ? "المكالمة متصلة" : accepting ? "جارٍ قبول المكالمة" : "مكالمة دعم واردة"}</p><p className="mt-0.5 text-xs font-medium text-blue-100">{active ? "الصوت متصل الآن" : accepting ? "يتم تجهيز الصوت والاتصال" : "يرن جهاز غرفة العمليات"}</p></div></div></div>
       <div className="p-5"><div className="flex items-center gap-3"><span className="flex size-11 items-center justify-center rounded-full bg-slate-100 text-slate-600"><UserRound className="size-5" /></span><div><p className="text-sm text-slate-500">العميل المتصل</p><p className="mt-0.5 font-bold text-slate-900">{incoming.guestName}</p></div></div>
       {activeVoice.data && <p className="mt-4 rounded-xl bg-violet-50 px-3 py-2 text-xs font-semibold leading-5 text-violet-800">سيسمع العميل صوت فريق الدعم المختار: {activeVoice.data.name}. وإذا تعذر ElevenLabs، تستمر المكالمة بالصوت الطبيعي.</p>}
-      {voiceFallbackNotice && <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-900">{voiceFallbackNotice}</p>}
+      <OwnerVoiceFallbackNotice message={voiceFallbackNotice} />
       <div className="mt-5 flex gap-3">
         {active ? <Button onClick={end} className="h-13 flex-1 rounded-2xl bg-red-600 font-bold hover:bg-red-700"><PhoneOff className="ml-2 size-5" />إنهاء المكالمة</Button> : <><Button onClick={accept} disabled={accepting} className="h-13 flex-1 rounded-2xl bg-[#155eef] font-bold hover:bg-[#0b4fbd] disabled:opacity-65"><Mic className="ml-2 size-5" />{accepting ? "جارٍ القبول..." : "قبول المكالمة"}</Button><Button variant="outline" onClick={reject} disabled={accepting} className="h-13 rounded-2xl border-red-200 px-5 font-bold text-red-600 hover:bg-red-50 hover:text-red-700"><PhoneOff className="ml-1.5 size-5" />رفض</Button></>}
       </div>
@@ -126,4 +126,9 @@ export function OwnerCallListener() {
       </div>
     </aside>
   );
+}
+
+export function OwnerVoiceFallbackNotice({ message }: { message: string | null }) {
+  if (!message) return null;
+  return <p role="status" data-testid="owner-voice-fallback-notice" className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-900">{message}</p>;
 }

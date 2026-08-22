@@ -16,6 +16,7 @@ import ClientDemoChat from "./pages/ClientDemoChat";
 import GuestChat from "./pages/GuestChat";
 import InviteGuest from "./pages/InviteGuest";
 import MissedCallPreview from "./pages/MissedCallPreview";
+import VoiceFallbackPreview from "./pages/VoiceFallbackPreview";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -45,6 +46,7 @@ function Router() {
       <Route path={"/dashboard/settings"} component={Dashboard} />
       <Route path={"/dashboard/archive"} component={Dashboard} />
       {import.meta.env.DEV && <Route path={"/_qa/missed-calls"} component={MissedCallPreview} />}
+      {import.meta.env.DEV && <Route path={"/_qa/voice-fallback"} component={VoiceFallbackPreview} />}
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
