@@ -136,6 +136,71 @@
 }
 
 @layer components {
+  html:has(.client-viewport),
+  body:has(.client-viewport),
+  body:has(.client-viewport) #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .client-viewport {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .client-phone-shell {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .client-fixed-header {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    z-index: 1000;
+    width: min(100%, 28rem);
+    transform: translateX(-50%);
+  }
+
+  .client-scroll-area {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .client-fixed-composer {
+    position: fixed;
+    left: 50%;
+    z-index: 900;
+    width: min(100%, 28rem);
+    transform: translateX(-50%);
+  }
+
+  @media (min-width: 640px) {
+    .client-viewport {
+      padding: 1.5rem;
+    }
+
+    .client-phone-shell {
+      margin-inline: auto;
+      max-width: 28rem;
+      border-radius: 2rem;
+      box-shadow: 0 25px 50px -12px rgb(15 23 42 / 0.25);
+    }
+
+    .client-fixed-header {
+      top: 1.5rem;
+      width: min(calc(100% - 3rem), 28rem);
+      border-radius: 2rem 2rem 0 0;
+    }
+
+    .client-fixed-composer {
+      width: min(calc(100% - 3rem), 28rem);
+    }
+  }
+
   html[data-agent-brand-color="enabled"] button[class*="bg-blue-"],
   html[data-agent-brand-color="enabled"] [role="button"][class*="bg-blue-"] {
     background-color: var(--agent-brand-primary) !important;

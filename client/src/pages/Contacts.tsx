@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 
 const formatDate = (value: Date | string) => new Intl.DateTimeFormat("ar-EG", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
-const chatStatus = { open: "مفتوحة", in_progress: "قيد المعالجة", closed: "مغلقة" };
+const chatStatus = { open: "مفتوحة", in_progress: "قيد المعالجة", needs_human_support: "تحتاج فريق دعم", closed: "مغلقة" };
 const requestStatus = { new: "جديد", in_progress: "قيد المعالجة", waiting: "قيد الانتظار", completed: "مكتمل", closed: "مغلق" };
 
 export default function Contacts() {

@@ -377,6 +377,17 @@ export async function addOwnerMessage(conversationId: number, content: string) {
   return messages[0];
 }
 
+export async function addAssistantMessage(conversationId: number, content: string) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const cleanContent = content.trim();
+  const inserted = await db.insert(supportMessages).values({ conversationId, sender: "assistant", content: cleanContent });
+  const messageId = Number(inserted[0].insertId);
+  await db.update(conversations).set({ lastMessagePreview: preview(cleanContent), lastMessageAt: new Date(), ownerUnread: false }).where(eq(conversations.id, conversationId));
+  const messages = await db.select().from(supportMessages).where(eq(supportMessages.id, messageId)).limit(1);
+  return messages[0];
+}
+
 /** Records an automated event such as a call ending without attributing it to either participant. */
 export async function addSystemMessage(conversationId: number, content: string) {
   const db = await getDb();

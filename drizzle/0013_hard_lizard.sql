@@ -1,0 +1,2 @@
+ALTER TABLE `conversations` MODIFY COLUMN `status` enum('open','in_progress','needs_human_support','closed') NOT NULL DEFAULT 'open';--> statement-breakpoint
+ALTER TABLE `support_messages` MODIFY COLUMN `sender` enum('guest','owner','assistant','system') NOT NULL;

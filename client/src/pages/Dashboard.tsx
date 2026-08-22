@@ -24,8 +24,8 @@ import { toast } from "sonner";
 import { useLocation } from "wouter";
 import { io } from "socket.io-client";
 
-const statusLabels = { open: "مفتوحة", in_progress: "قيد المعالجة", closed: "مغلقة" };
-type StatusFilter = "all" | "open" | "in_progress" | "closed";
+const statusLabels = { open: "مفتوحة", in_progress: "قيد المعالجة", needs_human_support: "تحتاج فريق دعم", closed: "مغلقة" };
+type StatusFilter = "all" | "open" | "in_progress" | "needs_human_support" | "closed";
 
 const formatDate = (value: Date | string) => new Intl.DateTimeFormat("ar-EG", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 const fileToBase64 = (file: File) => new Promise<string>((resolve, reject) => {
@@ -35,8 +35,8 @@ const fileToBase64 = (file: File) => new Promise<string>((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
-function StatusBadge({ status }: { status: "open" | "in_progress" | "closed" }) {
-  const colors = { open: "bg-blue-100 text-blue-700", in_progress: "bg-amber-100 text-amber-700", closed: "bg-slate-200 text-slate-600" };
+function StatusBadge({ status }: { status: "open" | "in_progress" | "needs_human_support" | "closed" }) {
+  const colors = { open: "bg-blue-100 text-blue-700", in_progress: "bg-amber-100 text-amber-700", needs_human_support: "bg-rose-100 text-rose-700", closed: "bg-slate-200 text-slate-600" };
   return <Badge className={`border-0 px-2.5 py-1 font-medium hover:${colors[status]} ${colors[status]}`}>{statusLabels[status]}</Badge>;
 }
 

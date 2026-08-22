@@ -36,7 +36,7 @@ export const conversations = mysqlTable(
     contactId: int("contactId"),
     guestName: varchar("guestName", { length: 120 }).notNull(),
     issue: text("issue").notNull(),
-    status: mysqlEnum("status", ["open", "in_progress", "closed"]).default("open").notNull(),
+    status: mysqlEnum("status", ["open", "in_progress", "needs_human_support", "closed"]).default("open").notNull(),
     lastMessagePreview: varchar("lastMessagePreview", { length: 280 }).notNull(),
     lastMessageAt: timestamp("lastMessageAt").defaultNow().notNull(),
     ownerUnread: boolean("ownerUnread").default(true).notNull(),
@@ -59,7 +59,7 @@ export const supportMessages = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     conversationId: int("conversationId").notNull(),
-    sender: mysqlEnum("sender", ["guest", "owner", "system"]).notNull(),
+    sender: mysqlEnum("sender", ["guest", "owner", "assistant", "system"]).notNull(),
     content: text("content").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
