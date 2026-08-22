@@ -10,6 +10,7 @@ describe("مساعد مؤسسة الوليد الإنسانية", () => {
 
   it("يحوّل الأسئلة الحساسة مباشرة إلى فريق الدعم من دون استدعاء النموذج", async () => {
     expect(requiresHumanSupport("ما حالة طلبي وهل تم قبوله؟")).toBe(true);
+    expect(requiresHumanSupport("ما هي مؤسسة الوليد بن طلال الإنسانية؟")).toBe(false);
     const decision = await decideSupportAssistantReply({ content: "ما حالة طلبي وهل تم قبوله؟", history: [] });
     expect(decision).toEqual({ action: "handoff", reply: supportAssistantHandoffReply });
     expect(mocks.invokeLLM).not.toHaveBeenCalled();
@@ -21,6 +22,7 @@ describe("مساعد مؤسسة الوليد الإنسانية", () => {
     expect(decision.action).toBe("reply");
     expect(decision.reply).toContain("جهة إنسانية");
     expect(mocks.invokeLLM).toHaveBeenCalledTimes(1);
+    expect(mocks.invokeLLM).toHaveBeenCalledWith(expect.objectContaining({ model: "gpt-5-mini", maxCompletionTokens: 320, reasoning: { effort: "minimal" } }));
   });
 
   it("يفضّل التحويل الآمن عند رد غير صالح من النموذج", async () => {

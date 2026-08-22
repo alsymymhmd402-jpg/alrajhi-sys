@@ -4,7 +4,7 @@ export type AssistantDecision = { action: "reply" | "handoff"; reply: string };
 type HistoryMessage = { sender: "guest" | "owner" | "assistant" | "system"; content: string };
 
 const handoffReply = "شكرًا لتوضيح طلبك. سيتم الآن توجيه محادثتك إلى فريق خدمة العملاء لمراجعة التفاصيل والرد عليك بشكل دقيق.";
-const sensitivePattern = /(حالة.*طلب|قبول|رفض|استحقاق|مستند|وثيقة|حساب|تعديل.*بيانات|شكوى|قانون|مالي|دفعة|مبلغ|تواصل.*موظف|موظف|موظفة|إنسان)/i;
+const sensitivePattern = /(حالة.*طلب|قبول|رفض|استحقاق|مستند|وثيقة|حساب|تعديل.*بيانات|شكوى|قانون|مالي|دفعة|مبلغ|تواصل.*موظف|موظف|موظفة)/i;
 
 export function requiresHumanSupport(content: string) {
   return sensitivePattern.test(content);
@@ -15,7 +15,8 @@ export async function decideSupportAssistantReply(input: { content: string; hist
   try {
   const response = await invokeLLM({
     model: "gpt-5-mini",
-    maxTokens: 180,
+    maxCompletionTokens: 320,
+    reasoning: { effort: "minimal" },
     messages: [
       { role: "system", content: `أنت «مساعد مؤسسة الوليد الإنسانية»، المساعد الآلي الرسمي داخل خدمة العملاء. أجب بالعربية بفقرة واحدة قصيرة جداً (حتى 240 حرفاً). لا تذكر أنك موظف بشري ولا تدّعِ قبولاً أو رفضاً أو حالة طلب أو موعداً أو مبلغاً أو برنامجاً أو رابطاً غير مؤكد. المعرفة المسموح بها فقط: المؤسسة جهة إنسانية، ويمكن للعميل إرسال استفساره من هذه المحادثة ليتابعه الفريق عند الحاجة. إذا كان السؤال يحتاج بيانات خاصة أو قراراً أو مراجعة أو معلومة غير مؤكدة، أخرج JSON بالحرف التالي فقط: {"action":"handoff","reply":"${handoffReply}"}. وإلا أخرج JSON فقط: {"action":"reply","reply":"رد عربي قصير ومهذب"}.` },
       { role: "user", content: `سياق مقتضب للمحادثة:\n${input.history.slice(-6).map(item => `${item.sender}: ${item.content.slice(0, 260)}`).join("\n")}\n\nرسالة العميل الجديدة: ${input.content}` },
