@@ -37,6 +37,7 @@ const DEFAULT_WIDTH = 280;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 480;
 const institutionLogo = "/manus-storage/alwaleed-philanthropies-mark_d87d264e.jpg";
+const operationsOrbUrl = "/manus-storage/operations-gear-orb_a6c7fbb3.png";
 
 export default function DashboardLayout({
   children,
@@ -139,6 +140,7 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
+                  <img src={operationsOrbUrl} alt="" aria-hidden="true" className="size-7 rounded-lg object-cover" />
                   <span className="font-semibold tracking-tight truncate">مراسلة المؤسسة</span>
                 </div>
               ) : null}
