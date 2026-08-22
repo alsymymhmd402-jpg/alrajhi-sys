@@ -8,6 +8,12 @@ type ElevenLabsVoice = {
 };
 
 type ElevenLabsVoiceList = { voices?: ElevenLabsVoice[] };
+type ElevenLabsSubscription = {
+  tier?: string;
+  status?: string;
+  character_count?: number;
+  character_limit?: number;
+};
 
 const apiBase = "https://api.elevenlabs.io";
 
@@ -48,6 +54,32 @@ export async function listElevenLabsVoices(): Promise<ProviderVoice[]> {
     previewUrl: voice.preview_url ?? null,
     labels: voice.labels ?? {},
   }));
+}
+
+export async function getElevenLabsProviderHealth() {
+  try {
+    const response = await fetch(`${apiBase}/v1/user/subscription`, {
+      headers: { "xi-api-key": getApiKey() },
+    });
+    await ensureSuccess(response, "التحقق من حالة ElevenLabs");
+    const subscription = await response.json() as ElevenLabsSubscription;
+    const limit = Number(subscription.character_limit ?? 0);
+    const used = Number(subscription.character_count ?? 0);
+    const remaining = Math.max(0, limit - used);
+    return {
+      connected: true,
+      tier: subscription.tier ?? "غير معروف",
+      status: subscription.status ?? "غير معروف",
+      capacity: remaining > 0 ? "متاحة" : "مستنفدة",
+    } as const;
+  } catch {
+    return {
+      connected: false,
+      tier: null,
+      status: "غير متاح",
+      capacity: "غير معروفة",
+    } as const;
+  }
 }
 
 export async function synthesizeVoicePreview(voiceId: string) {
