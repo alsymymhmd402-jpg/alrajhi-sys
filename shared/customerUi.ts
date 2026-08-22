@@ -8,7 +8,7 @@ export const customerUiComponentSchema = z.object({
   type: z.enum(customerUiComponentTypes),
   label: z.string().trim().min(1).max(120),
   x: z.number().int().min(0).max(100),
-  y: z.number().int().min(0).max(100),
+  y: z.number().int().min(0).max(500),
   width: z.number().int().min(8).max(100),
   height: z.number().int().min(4).max(100),
   visible: z.boolean().default(true),
@@ -27,6 +27,13 @@ export const customerUiComponentSchema = z.object({
     opacity: z.number().min(0.1).max(1).optional(),
     padding: z.number().int().min(0).max(48).optional(),
     objectFit: z.enum(["cover", "contain"]).optional(),
+    objectPositionX: z.number().int().min(0).max(100).optional(),
+    objectPositionY: z.number().int().min(0).max(100).optional(),
+    imageScale: z.number().min(1).max(3).optional(),
+    filterPreset: z.enum(["none", "warm", "cool", "mono", "vivid", "soft"]).optional(),
+    borderWidth: z.number().int().min(0).max(12).optional(),
+    borderColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+    shadow: z.boolean().optional(),
   }).default({}),
   action: z.object({ type: z.enum(["none", "chat", "institution", "application", "profile", "url"]).default("none"), value: z.string().max(500).optional() }).default({ type: "none" }),
   statusSteps: z.array(z.object({ id: z.string().min(1).max(80), label: z.string().trim().min(1).max(100), color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#128c7e") })).max(8).optional(),
@@ -35,7 +42,7 @@ export const customerUiComponentSchema = z.object({
 
 export const customerUiDocumentSchema = z.object({
   schemaVersion: z.literal(1),
-  canvas: z.object({ background: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#ffffff"), primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#075e54"), title: z.string().trim().max(120).default("واجهة العميل") }),
+  canvas: z.object({ background: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#ffffff"), primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#075e54"), title: z.string().trim().max(120).default("واجهة العميل"), contentHeight: z.number().int().min(100).max(500).default(100) }),
   components: z.array(customerUiComponentSchema).max(50),
 });
 
@@ -44,7 +51,7 @@ export type CustomerUiComponent = z.infer<typeof customerUiComponentSchema>;
 
 export const defaultCustomerUiDocument: CustomerUiDocument = {
   schemaVersion: 1,
-  canvas: { background: "#ffffff", primaryColor: "#075e54", title: "واجهة مراسلة المؤسسة" },
+  canvas: { background: "#ffffff", primaryColor: "#075e54", title: "واجهة مراسلة المؤسسة", contentHeight: 100 },
   components: [
     { id: "welcome-card", type: "card", label: "بطاقة الترحيب", x: 6, y: 5, width: 88, height: 22, visible: true, locked: false, content: "مرحباً بك في مراسلة المؤسسة", style: { background: "#075e54", color: "#ffffff", borderRadius: 22, padding: 16, fontSize: 18, fontWeight: 800 }, action: { type: "none" } },
     { id: "welcome-description", type: "text", label: "وصف الترحيب", x: 9, y: 24, width: 82, height: 12, visible: true, locked: false, content: "تابع طلبك وتواصل مع فريق خدمة العملاء بسهولة وأمان.", style: { color: "#475569", fontSize: 13, lineHeight: 1.7, textAlign: "right" }, action: { type: "none" } },

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { customerUiDocumentSchema, defaultCustomerUiDocument } from "../../shared/customerUi";
 import * as db from "../db";
 import { publicProcedure, router } from "../_core/trpc";
+import { appendStatusMediaChunk, beginStatusMediaUpload, finishStatusMediaUpload } from "../statusMediaUpload";
 
 const contactIdSchema = z.object({ contactId: z.number().int().positive() });
 const guestSchema = z.object({ publicId: z.string().min(8).max(24), accessToken: z.string().min(16).max(64) });
@@ -14,6 +15,16 @@ async function contactForConfig(contactId: number) {
 }
 
 export const customerUiRouter = router({
+  beginImageUpload: publicProcedure.input(z.object({ fileName: z.string().min(1).max(260), mimeType: z.string().startsWith("image/"), size: z.number().int().positive().max(8 * 1024 * 1024), totalChunks: z.number().int().min(1).max(800) })).mutation(({ input }) => {
+    const result = beginStatusMediaUpload(input);
+    if (result.mediaType !== "image") throw new Error("يسمح محرر الواجهة برفع الصور فقط.");
+    return result;
+  }),
+  appendImageChunk: publicProcedure.input(z.object({ uploadId: z.string().min(8).max(40), index: z.number().int().min(0), data: z.string().min(1).max(30_000) })).mutation(({ input }) => appendStatusMediaChunk(input)),
+  finishImageUpload: publicProcedure.input(z.object({ uploadId: z.string().min(8).max(40) })).mutation(async ({ input }) => {
+    const upload = await finishStatusMediaUpload(input.uploadId);
+    return { url: upload.url };
+  }),
   editor: publicProcedure.input(contactIdSchema).query(async ({ input }) => {
     const contact = await contactForConfig(input.contactId);
     const config = await db.ensureCustomerUiConfig({ contactId: contact.id, name: `واجهة ${contact.displayName}`, document: JSON.stringify(defaultCustomerUiDocument) });

@@ -194,3 +194,13 @@
   }
   button:active:not(:disabled) { transform: scale(0.97); }
 }
+
+@media (min-width: 1280px) {
+  .customer-ui-workspace {
+    grid-template-columns: 220px minmax(360px, 1fr) 300px;
+  }
+
+  .customer-ui-workspace > aside:first-child { order: 1 !important; }
+  .customer-ui-workspace > section { order: 2 !important; }
+  .customer-ui-workspace > aside:last-child { order: 3 !important; }
+}

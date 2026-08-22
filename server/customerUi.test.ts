@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { TrpcContext } from "./_core/context";
-import { defaultCustomerUiDocument } from "../shared/customerUi";
+import { customerUiDocumentSchema, defaultCustomerUiDocument } from "../shared/customerUi";
 
 const mocks = vi.hoisted(() => ({
   getContactDetails: vi.fn(),
@@ -70,5 +70,24 @@ describe("محرر واجهة العميل", () => {
     await expect(caller.customerUi.guestNotifications({ publicId: "customer-ui-123", accessToken: "a".repeat(32) })).resolves.toHaveLength(1);
     await expect(caller.customerUi.markNotificationRead({ publicId: "customer-ui-123", accessToken: "a".repeat(32), notificationId: 31 })).resolves.toEqual({ success: true });
     expect(mocks.markCustomerUiNotificationRead).toHaveBeenCalledWith(8, 31);
+  });
+
+  it("يقبل تصميمًا طويلاً وخصائص قص الصورة ومرشحها عند حفظ واجهة العميل", () => {
+    const document = customerUiDocumentSchema.parse({
+      ...defaultCustomerUiDocument,
+      canvas: { ...defaultCustomerUiDocument.canvas, contentHeight: 260 },
+      components: [{
+        ...defaultCustomerUiDocument.components[0],
+        id: "hero-image-001",
+        type: "image",
+        label: "صورة مقصوصة",
+        y: 180,
+        content: "/manus-storage/customer-ui/hero.jpg",
+        style: { ...defaultCustomerUiDocument.components[0].style, objectFit: "cover", objectPositionX: 72, objectPositionY: 24, imageScale: 1.4, filterPreset: "warm", borderWidth: 2, borderColor: "#ffffff", shadow: true },
+      }],
+    });
+
+    expect(document.canvas.contentHeight).toBe(260);
+    expect(document.components[0]?.style).toMatchObject({ objectPositionX: 72, objectPositionY: 24, imageScale: 1.4, filterPreset: "warm" });
   });
 });
