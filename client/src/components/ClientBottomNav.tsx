@@ -1,7 +1,6 @@
 import { getClientSectionPath, type ClientSection } from "@/lib/clientRoutes";
 import { getClientSession } from "@/lib/clientSession";
 import { trpc } from "@/lib/trpc";
-import { ClientExperienceCard } from "@/components/ClientExperienceCard";
 import { Building2, ClipboardCheck, MessagesSquare, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
@@ -21,9 +20,13 @@ export function ClientBottomNav({ publicId, active }: { publicId: string; active
   const experience = trpc.clientExperience.guestGet.useQuery({ publicId, accessToken: accessToken ?? "" }, { enabled: Boolean(accessToken), refetchInterval: 5000 });
   const storageKey = `client-experience-seen:${publicId}`;
   const [seenVersion, setSeenVersion] = useState(() => Number(sessionStorage.getItem(storageKey) || 0));
+  const [showUpdateToast, setShowUpdateToast] = useState(false);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   useEffect(() => { if (active === "application" && (experience.data?.version ?? 0) > seenVersion) { const next = experience.data?.version ?? 0; sessionStorage.setItem(storageKey, String(next)); setSeenVersion(next); } }, [active, experience.data?.version, seenVersion, storageKey]);
   const hasUpdate = Boolean(experience.data?.notifyClient && (experience.data?.version ?? 0) > seenVersion);
-  return <><div className="fixed bottom-[calc(max(.75rem,env(safe-area-inset-bottom))+5.4rem)] left-1/2 z-40 w-[calc(100%-2rem)] max-w-[25.5rem] -translate-x-1/2"><ClientExperienceCard experience={experience.data} section={active} onNavigate={section => setLocation(getClientSectionPath(publicId, section))} /></div><nav className="fixed bottom-[max(.75rem,env(safe-area-inset-bottom))] left-1/2 z-50 grid w-[calc(100%-1.5rem)] max-w-[26.5rem] -translate-x-1/2 grid-cols-4 rounded-[1.45rem] border border-white/90 bg-white/95 p-1.5 shadow-[0_18px_45px_rgba(4,83,73,.25)] backdrop-blur-xl" aria-label="تنقل تطبيق مراسلة المؤسسة">
+  useEffect(() => { if (!hasUpdate) return; setShowUpdateToast(true); const timer = window.setTimeout(() => setShowUpdateToast(false), 2200); return () => window.clearTimeout(timer); }, [experience.data?.version, hasUpdate]);
+  useEffect(() => { const viewport = window.visualViewport; if (!viewport) return; const update = () => setIsKeyboardOpen(window.innerHeight - viewport.height > 140); update(); viewport.addEventListener("resize", update); return () => viewport.removeEventListener("resize", update); }, []);
+  return <>{showUpdateToast && <aside role="status" className="fixed bottom-[calc(max(.75rem,env(safe-area-inset-bottom))+5.7rem)] left-1/2 z-40 flex w-[calc(100%-3rem)] max-w-sm -translate-x-1/2 items-center gap-2 rounded-2xl border border-emerald-100 bg-white/95 px-3 py-2 text-xs font-bold text-[#075e54] shadow-xl shadow-emerald-950/15 backdrop-blur"><span className="flex size-6 items-center justify-center rounded-full bg-emerald-100 text-sm">✓</span><span>تم تحديث واجهتك</span><span className="mr-auto text-[10px] font-medium text-slate-400">ستجد التحديث في تبويبه</span></aside>}<nav className={`fixed bottom-[max(.75rem,env(safe-area-inset-bottom))] left-1/2 z-50 grid w-[calc(100%-1.5rem)] max-w-[26.5rem] -translate-x-1/2 grid-cols-4 rounded-[1.45rem] border border-white/90 bg-white/95 p-1.5 shadow-[0_18px_45px_rgba(4,83,73,.25)] backdrop-blur-xl transition duration-200 ${isKeyboardOpen ? "pointer-events-none translate-y-8 opacity-0" : "opacity-100"}`} aria-label="تنقل تطبيق مراسلة المؤسسة">
     {items.map(item => {
       const Icon = item.icon;
       const selected = item.id === active;
