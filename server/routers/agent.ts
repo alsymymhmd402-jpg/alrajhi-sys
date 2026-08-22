@@ -65,8 +65,8 @@ export const agentRouter = router({
     });
 
     if (proposal.actionType === "manual_development") {
-      const result = "تم اعتماد طلب التطوير وتسجيله في غرفة المراجعة. التغيير في الشيفرة يحتاج إصداراً منشوراً ولا يُنفذ من المتصفح مباشرة حفاظاً على أمان الموقع.";
-      const queued = await updateAgentProposal(proposal.id, { executionProgress: 100, executionStage: "طلب تطوير بانتظار إصدار", executionResult: result, verificationResult: "تم تسجيل الطلب للمراجعة قبل النشر." });
+      const result = "تم اعتماد طلب التطوير وتسجيله كعمل يتطلب إصداراً منشوراً. لم يُنفذ تغيير داخل التطبيق بعد.";
+      const queued = await updateAgentProposal(proposal.id, { executionProgress: 0, executionStage: "يتطلب إصداراً منشوراً", executionResult: result, verificationResult: "لا توجد نتيجة تنفيذ لأن الطلب يحتاج تعديل شفرة ونشراً فعلياً." });
       await createAgentMessage({ threadId: proposal.threadId, role: "assistant", kind: "execution", content: result, proposalId: proposal.id });
       return { proposal: queued, result, pendingManualWork: true, readyToExecute: false };
     }

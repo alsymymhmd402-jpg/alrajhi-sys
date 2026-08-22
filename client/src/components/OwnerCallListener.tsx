@@ -52,7 +52,7 @@ export function OwnerCallListener() {
   useEffect(() => {
     const token = tokenMutation.data?.token;
     if (!token) return;
-    const socket = io({ path: "/api/realtime", transports: ["websocket"], auth: { role: "owner", token } });
+    const socket = io({ path: "/api/realtime", transports: ["polling", "websocket"], upgrade: true, timeout: 10_000, auth: { role: "owner", token } });
     socketRef.current = socket;
     socket.on("call:incoming", (call: IncomingCall) => { incomingCallRef.current = call; setMissed(false); setAccepting(false); setVoiceFallbackNotice(null); setIncoming(call); toast.message(`مكالمة واردة من ${call.guestName}`); });
     socket.on("webrtc:offer", async ({ callId, sdp }) => {
@@ -66,7 +66,7 @@ export function OwnerCallListener() {
     });
     socket.on("webrtc:ice", async ({ candidate }) => { if (peerRef.current) await peerRef.current.addIceCandidate(candidate); });
     socket.on("call:ended", ({ callId, reason }) => { const current = incomingCallRef.current ?? activeCallRef.current; if (!current || current.callId !== callId) return; if (typeof reason === "string" && reason.startsWith("مكالمة فائتة")) setMissed(true); cleanup(); incomingCallRef.current = null; setIncoming(null); if (reason) toast.message(reason); });
-    socket.on("connect_error", error => toast.error(error.message || "تعذّر ربط استقبال المكالمات."));
+    socket.on("connect_error", () => { /* يعيد Socket.IO المحاولة أو يتراجع إلى polling من دون تنبيه مزعج. */ });
     return () => {
       socket.disconnect();
     };
