@@ -17,16 +17,6 @@ const allowedSettingKeys = [
   "guest.welcomeMessage",
 ] as const;
 
-const namedColors: Array<[RegExp, string]> = [
-  [/(?:أسود|الاسود|أسوداً|اسوداً)/, "#000000"],
-  [/(?:أبيض|الابيض|أبيضاً|ابيضاً)/, "#FFFFFF"],
-  [/(?:أزرق داكن|ازرق داكن|كحلي)/, "#155EEF"],
-  [/(?:أزرق|ازرق)/, "#2563EB"],
-  [/(?:أخضر داكن|اخضر داكن)/, "#075E54"],
-  [/(?:أخضر|اخضر)/, "#128C7E"],
-  [/(?:أحمر|احمر)/, "#DC2626"],
-];
-
 export function isAllowedSettingValue(settingKey: string, settingValue: string) {
   const value = settingValue.trim();
   if (settingKey === "brand.primaryColor") return /^#[0-9a-fA-F]{6}$/.test(value);
@@ -89,8 +79,8 @@ function safePlan(value: unknown): AgentPlan {
   };
 }
 
-export function fallbackProposalFromRequest(message: string, response: string): AgentPlan {
-  const color = message.match(/#[0-9a-fA-F]{6}\b/)?.[0] ?? namedColors.find(([pattern]) => pattern.test(message))?.[1];
+function fallbackProposalFromRequest(message: string, response: string): AgentPlan {
+  const color = message.match(/#[0-9a-fA-F]{6}\b/)?.[0];
   if (color && /(لون|أزرار|العلامة)/.test(message)) {
     return {
       response,
@@ -99,7 +89,7 @@ export function fallbackProposalFromRequest(message: string, response: string): 
         summary: `سيُحفظ اللون ${color.toUpperCase()} كلون رئيسي معتمد لتجربة العلامة التجارية.`,
         actionType: "update_setting",
         actionPayload: { settingKey: "brand.primaryColor", settingValue: color.toUpperCase() },
-        impact: "يُطبّق اللون فوراً على العناصر التي تستخدم اللون الرئيسي في الواجهة بعد الموافقة.",
+        impact: "يؤثر الإعداد على العناصر التي تستخدم اللون الرئيسي في الواجهة بعد اعتماد دعم الإعداد في التصميم.",
       },
     };
   }
@@ -144,11 +134,7 @@ export async function createAgentPlan(input: { message: string; memory: Array<{ 
   const text = extractText(await response.json());
   try {
     const plan = safePlan(JSON.parse(text));
-    const directSettingPlan = fallbackProposalFromRequest(input.message, plan.response);
-    if (directSettingPlan.proposal?.actionType === "update_setting" && (!plan.proposal || plan.proposal.actionType === "manual_development")) {
-      return directSettingPlan;
-    }
-    return plan.proposal ? plan : directSettingPlan;
+    return plan.proposal ? plan : fallbackProposalFromRequest(input.message, plan.response);
   } catch {
     return fallbackProposalFromRequest(input.message, "أفهم طلبك. أعددت معاينة آمنة قابلة للمراجعة قبل أي تنفيذ.");
   }

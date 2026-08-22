@@ -9,7 +9,7 @@ const guestAccessSchema = z.object({
   accessToken: z.string().min(16).max(64),
 });
 
-export const canStartDirectCall = (status: "open" | "in_progress" | "needs_human_support" | "closed") => status !== "closed";
+export const canStartDirectCall = (status: "open" | "in_progress" | "closed") => status !== "closed";
 
 async function resolveConversationVoice(conversationId: number) {
   const conversation = await db.getSupportConversationById(conversationId);

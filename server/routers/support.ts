@@ -6,9 +6,8 @@ import { notifyOwner } from "../_core/notification";
 import { publicProcedure, router } from "../_core/trpc";
 import { storagePut } from "../storage";
 import { emitRealtimeMessage } from "../realtime";
-import { decideSupportAssistantReply } from "../supportAssistant";
 
-export const supportStatusSchema = z.enum(["open", "in_progress", "needs_human_support", "closed"]);
+export const supportStatusSchema = z.enum(["open", "in_progress", "closed"]);
 const guestAccessSchema = z.object({
   publicId: z.string().min(8).max(24),
   accessToken: z.string().min(16).max(64),
@@ -146,20 +145,6 @@ export const supportRouter = router({
       if (!result.conversation || !result.message) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "تعذّر إرسال الرسالة." });
       emitRealtimeMessage(result.conversation.id, { messageId: result.message.id, sender: "guest" });
       await ownerNotice("رسالة دعم جديدة", `${result.conversation.guestName}: ${result.message.content.slice(0, 180)}`);
-      if (result.conversation.status !== "needs_human_support") {
-        try {
-          const history = await db.listSupportMessages(result.conversation.id);
-          const decision = await decideSupportAssistantReply({ content: result.message.content, history: history.map(message => ({ sender: message.sender, content: message.content })) });
-          const assistantMessage = await db.addAssistantMessage(result.conversation.id, decision.reply);
-          if (assistantMessage) emitRealtimeMessage(result.conversation.id, { messageId: assistantMessage.id, sender: "assistant" });
-          if (decision.action === "handoff") {
-            await db.updateSupportConversation(result.conversation.id, { status: "needs_human_support", ownerUnread: true });
-            await ownerNotice("تحتاج هذه المحادثة إلى فريق الدعم", `${result.conversation.guestName}: ${result.message.content.slice(0, 180)}`);
-          }
-        } catch (error) {
-          console.warn("[SupportAssistant] Safe assistant reply was skipped", error);
-        }
-      }
       return result.message;
     }),
 
@@ -242,6 +227,5 @@ export const supportRouter = router({
 export const supportStatusLabels = {
   open: "مفتوحة",
   in_progress: "قيد المعالجة",
-  needs_human_support: "تحتاج فريق دعم",
   closed: "مغلقة",
 } as const;

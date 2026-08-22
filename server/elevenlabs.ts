@@ -8,12 +8,6 @@ type ElevenLabsVoice = {
 };
 
 type ElevenLabsVoiceList = { voices?: ElevenLabsVoice[] };
-type ElevenLabsSubscription = {
-  tier?: string;
-  status?: string;
-  character_count?: number;
-  character_limit?: number;
-};
 
 const apiBase = "https://api.elevenlabs.io";
 
@@ -56,39 +50,13 @@ export async function listElevenLabsVoices(): Promise<ProviderVoice[]> {
   }));
 }
 
-export async function getElevenLabsProviderHealth() {
-  try {
-    const response = await fetch(`${apiBase}/v1/user/subscription`, {
-      headers: { "xi-api-key": getApiKey() },
-    });
-    await ensureSuccess(response, "التحقق من حالة ElevenLabs");
-    const subscription = await response.json() as ElevenLabsSubscription;
-    const limit = Number(subscription.character_limit ?? 0);
-    const used = Number(subscription.character_count ?? 0);
-    const remaining = Math.max(0, limit - used);
-    return {
-      connected: true,
-      tier: subscription.tier ?? "غير معروف",
-      status: subscription.status ?? "غير معروف",
-      capacity: remaining > 0 ? "متاحة" : "مستنفدة",
-    } as const;
-  } catch {
-    return {
-      connected: false,
-      tier: null,
-      status: "غير متاح",
-      capacity: "غير معروفة",
-    } as const;
-  }
-}
-
 export async function synthesizeVoicePreview(voiceId: string) {
   const response = await fetch(`${apiBase}/v1/text-to-speech/${encodeURIComponent(voiceId)}/stream?output_format=mp3_22050_32`, {
     method: "POST",
     headers: { "xi-api-key": getApiKey(), "Content-Type": "application/json" },
     body: JSON.stringify({
       text: "مرحباً، هذا مثال للصوت المختار في Voice Circle.",
-      model_id: "eleven_flash_v2_5",
+      model_id: "eleven_multilingual_v2",
       language_code: "ar",
     }),
   });

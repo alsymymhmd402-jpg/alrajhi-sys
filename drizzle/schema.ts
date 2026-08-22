@@ -36,7 +36,7 @@ export const conversations = mysqlTable(
     contactId: int("contactId"),
     guestName: varchar("guestName", { length: 120 }).notNull(),
     issue: text("issue").notNull(),
-    status: mysqlEnum("status", ["open", "in_progress", "needs_human_support", "closed"]).default("open").notNull(),
+    status: mysqlEnum("status", ["open", "in_progress", "closed"]).default("open").notNull(),
     lastMessagePreview: varchar("lastMessagePreview", { length: 280 }).notNull(),
     lastMessageAt: timestamp("lastMessageAt").defaultNow().notNull(),
     ownerUnread: boolean("ownerUnread").default(true).notNull(),
@@ -59,7 +59,7 @@ export const supportMessages = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     conversationId: int("conversationId").notNull(),
-    sender: mysqlEnum("sender", ["guest", "owner", "assistant", "system"]).notNull(),
+    sender: mysqlEnum("sender", ["guest", "owner", "system"]).notNull(),
     content: text("content").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
@@ -176,31 +176,123 @@ export const serviceRequests = mysqlTable(
   ],
 );
 
-/** Per-customer presentation settings controlled by the support team, never shared between customers. */
-export const clientExperiences = mysqlTable(
-  "client_experiences",
+/** مؤسسة تنشر حالة مرئية عامة لعملاء مراسلة المؤسسة، وتختفي تلقائياً بعد الوقت المحدد. */
+export const institutionStatuses = mysqlTable(
+  "institution_statuses",
   {
     id: int("id").autoincrement().primaryKey(),
-    contactId: int("contactId").notNull().unique(),
-    headline: varchar("headline", { length: 180 }).default("متابعة طلبك مع المؤسسة").notNull(),
-    bodyText: text("bodyText"),
-    imageUrl: varchar("imageUrl", { length: 900 }),
-    imagePosition: mysqlEnum("imagePosition", ["top", "inline", "bottom"]).default("top").notNull(),
-    imageScale: int("imageScale").default(100).notNull(),
-    accentColor: varchar("accentColor", { length: 7 }).default("#128c7e").notNull(),
-    textColor: varchar("textColor", { length: 7 }).default("#0f172a").notNull(),
-    displaySection: mysqlEnum("displaySection", ["support", "institution", "profile", "application"]).default("application").notNull(),
-    buttonLabel: varchar("buttonLabel", { length: 80 }).default("اطلع على التفاصيل").notNull(),
-    buttonEnabled: boolean("buttonEnabled").default(false).notNull(),
-    buttonSection: mysqlEnum("buttonSection", ["support", "institution", "profile", "application"]).default("application").notNull(),
-    acceptanceStatus: mysqlEnum("acceptanceStatus", ["under_review", "accepted", "needs_action", "not_accepted"]).default("under_review").notNull(),
-    acceptanceTitle: varchar("acceptanceTitle", { length: 160 }).default("طلبك قيد المراجعة").notNull(),
-    acceptanceNote: text("acceptanceNote"),
-    notifyClient: boolean("notifyClient").default(false).notNull(),
-    version: int("version").default(1).notNull(),
+    mediaType: mysqlEnum("mediaType", ["image", "video"]).notNull(),
+    storageKey: varchar("storageKey", { length: 700 }).notNull(),
+    mediaUrl: varchar("mediaUrl", { length: 900 }).notNull(),
+    fileName: varchar("fileName", { length: 260 }).notNull(),
+    mimeType: varchar("mimeType", { length: 140 }).notNull(),
+    textContent: varchar("textContent", { length: 500 }),
+    textColor: varchar("textColor", { length: 7 }).default("#ffffff").notNull(),
+    textFont: mysqlEnum("textFont", ["modern", "classic", "handwritten", "bold"]).default("modern").notNull(),
+    textAlign: mysqlEnum("textAlign", ["right", "center", "left"]).default("center").notNull(),
+    textPositionX: int("textPositionX").default(50).notNull(),
+    textPositionY: int("textPositionY").default(76).notNull(),
+    mediaFilter: mysqlEnum("mediaFilter", ["none", "warm", "cool", "mono", "vivid", "fade"]).default("none").notNull(),
+    isPublished: boolean("isPublished").default(false).notNull(),
+    expiresAt: timestamp("expiresAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
-  table => [index("client_experiences_contact_idx").on(table.contactId)],
+  table => [
+    index("institution_statuses_published_expires_idx").on(table.isPublished, table.expiresAt),
+    index("institution_statuses_created_idx").on(table.createdAt),
+  ],
+);
+
+/** مشاهدة العميل لحالة المؤسسة لإظهار عدد المشاهدات للمالك من دون كشف بيانات العميل للعموم. */
+export const institutionStatusViews = mysqlTable(
+  "institution_status_views",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    statusId: int("statusId").notNull(),
+    contactId: int("contactId").notNull(),
+    viewedAt: timestamp("viewedAt").defaultNow().notNull(),
+  },
+  table => [
+    index("institution_status_views_status_idx").on(table.statusId),
+    index("institution_status_views_contact_idx").on(table.contactId),
+  ],
+);
+
+/** ملف محرر واجهة العميل المنفصل؛ يحتفظ بمسودة قابلة للتعديل وآخر رقم منشور فقط. */
+export const customerUiConfigs = mysqlTable(
+  "customer_ui_configs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    contactId: int("contactId").notNull(),
+    name: varchar("name", { length: 160 }).notNull(),
+    draftDocument: text("draftDocument").notNull(),
+    draftVersion: int("draftVersion").default(1).notNull(),
+    publishedVersion: int("publishedVersion").default(0).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("customer_ui_configs_contact_idx").on(table.contactId)],
+);
+
+/** لقطة غير قابلة للتعديل من تصميم العميل عند الحفظ أو النشر، تدعم الاسترجاع والمقارنة. */
+export const customerUiRevisions = mysqlTable(
+  "customer_ui_revisions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    configId: int("configId").notNull(),
+    version: int("version").notNull(),
+    document: text("document").notNull(),
+    changeSummary: varchar("changeSummary", { length: 500 }).notNull(),
+    status: mysqlEnum("status", ["draft", "published", "restored"]).default("draft").notNull(),
+    publishedAt: timestamp("publishedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("customer_ui_revisions_config_version_idx").on(table.configId, table.version)],
+);
+
+/** قالب محفوظ قابل لإعادة الاستخدام في تصميمات أكثر من عميل. */
+export const customerUiTemplates = mysqlTable(
+  "customer_ui_templates",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    name: varchar("name", { length: 160 }).notNull(),
+    description: varchar("description", { length: 500 }),
+    document: text("document").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("customer_ui_templates_name_idx").on(table.name)],
+);
+
+/** إشعار داخل التطبيق يظهر للعميل عند نشر نسخة جديدة أو تغيير حالة طلبه. */
+export const customerUiNotifications = mysqlTable(
+  "customer_ui_notifications",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    contactId: int("contactId").notNull(),
+    title: varchar("title", { length: 180 }).notNull(),
+    body: varchar("body", { length: 500 }).notNull(),
+    route: varchar("route", { length: 300 }).notNull(),
+    isRead: boolean("isRead").default(false).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("customer_ui_notifications_contact_read_idx").on(table.contactId, table.isRead, table.createdAt)],
+);
+
+/** سجل تدقيقي موجز لكل مسودة أو نشر أو استرجاع أو تطبيق قالب. */
+export const customerUiAuditLogs = mysqlTable(
+  "customer_ui_audit_logs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    contactId: int("contactId").notNull(),
+    configId: int("configId"),
+    revisionId: int("revisionId"),
+    action: mysqlEnum("action", ["draft_saved", "published", "restored", "template_applied", "status_changed"]).notNull(),
+    summary: varchar("summary", { length: 500 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("customer_ui_audit_logs_contact_created_idx").on(table.contactId, table.createdAt)],
 );
 
 /** A file or image attached to a support message, stored externally in S3. */
@@ -342,7 +434,6 @@ export type CallLog = typeof callLogs.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
 export type GuestSession = typeof guestSessions.$inferSelect;
 export type ServiceRequest = typeof serviceRequests.$inferSelect;
-export type ClientExperience = typeof clientExperiences.$inferSelect;
 export type MessageAttachment = typeof messageAttachments.$inferSelect;
 export type VoiceModel = typeof voiceModels.$inferSelect;
 export type AgentThread = typeof agentThreads.$inferSelect;

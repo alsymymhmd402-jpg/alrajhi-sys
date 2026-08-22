@@ -14,7 +14,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Archive, Bot, ClipboardList, LayoutDashboard, Link2, MessageSquareText, PanelRight, PhoneCall, Settings2, Sparkles, UsersRound, Waves } from "lucide-react";
+import { Archive, Bot, ClipboardList, LayoutDashboard, Link2, MessageSquareText, PanelRight, PhoneCall, Settings2, Sparkles, UsersRound, Waves, CirclePlay, Paintbrush } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
@@ -25,6 +25,8 @@ const menuItems = [
   { icon: MessageSquareText, label: "المحادثات", path: "/dashboard/chats" },
   { icon: Link2, label: "روابط الدعوة", path: "/dashboard/invitations" },
   { icon: PhoneCall, label: "سجل المكالمات", path: "/dashboard/calls" },
+  { icon: CirclePlay, label: "حالات المؤسسة", path: "/dashboard/statuses" },
+  { icon: Paintbrush, label: "محرر واجهة العميل", path: "/dashboard/customer-ui" },
   { icon: Sparkles, label: "وكيل التطبيق", path: "/dashboard/app-agent" },
   { icon: Bot, label: "Voice AI", path: "/dashboard/voice-ai" },
   { icon: Waves, label: "النماذج الصوتية", path: "/dashboard/voice-models" },
@@ -37,7 +39,6 @@ const DEFAULT_WIDTH = 280;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 480;
 const institutionLogo = "/manus-storage/alwaleed-philanthropies-mark_d87d264e.jpg";
-const operationsOrbUrl = "/manus-storage/operations-gear-orb_a6c7fbb3.png";
 
 export default function DashboardLayout({
   children,
@@ -140,7 +141,6 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  <img src={operationsOrbUrl} alt="" aria-hidden="true" className="size-7 rounded-lg object-cover" />
                   <span className="font-semibold tracking-tight truncate">مراسلة المؤسسة</span>
                 </div>
               ) : null}

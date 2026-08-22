@@ -13,7 +13,7 @@ type RealtimeSocket = Socket & {
     callId?: number;
   };
 };
-type RealtimeMessageSender = "guest" | "owner" | "assistant" | "system";
+type RealtimeMessageSender = "guest" | "owner" | "system";
 
 const ownerTokens = new Map<string, OwnerToken>();
 const guestSocketByCall = new Map<number, string>();

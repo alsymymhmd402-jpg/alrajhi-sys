@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "../db";
-import { convertVoiceChunk, getElevenLabsProviderHealth, listElevenLabsVoices, synthesizeVoicePreview } from "../elevenlabs";
+import { convertVoiceChunk, listElevenLabsVoices, synthesizeVoicePreview } from "../elevenlabs";
 import { publicProcedure, router } from "../_core/trpc";
 
 const modelStatusSchema = z.enum(["active", "disabled"]);
@@ -14,7 +14,6 @@ export const voiceRouter = router({
     turn: Boolean(process.env.TURN_SERVER_URLS) ? "مهيأ" : "NOT CONFIGURED",
     models: (await db.listVoiceModels()).length,
   })),
-  providerHealth: publicProcedure.query(() => getElevenLabsProviderHealth()),
   listModels: publicProcedure.query(() => db.listVoiceModels()),
   catalog: publicProcedure.query(() => listElevenLabsVoices()),
   activeModel: publicProcedure.query(async () => {

@@ -6,11 +6,12 @@ import { OwnerOutgoingCall } from "@/components/OwnerOutgoingCall";
 import CallLogs from "@/pages/CallLogs";
 import AgentConsole from "@/pages/AgentConsole";
 import Contacts from "@/pages/Contacts";
+import CustomerUiBuilder from "@/pages/CustomerUiBuilder";
 import Invitations from "@/pages/Invitations";
+import InstitutionStatusStudio from "@/pages/InstitutionStatusStudio";
 import OperationsDashboard from "@/pages/OperationsDashboard";
 import Requests from "@/pages/Requests";
 import Settings from "@/pages/Settings";
-import ClientExperienceStudio from "@/pages/ClientExperienceStudio";
 import { VoiceModels, VoiceStatus } from "@/pages/VoiceConsole";
 import { SupportChatThread } from "@/components/SupportChatThread";
 import { Badge } from "@/components/ui/badge";
@@ -24,8 +25,8 @@ import { toast } from "sonner";
 import { useLocation } from "wouter";
 import { io } from "socket.io-client";
 
-const statusLabels = { open: "مفتوحة", in_progress: "قيد المعالجة", needs_human_support: "تحتاج فريق دعم", closed: "مغلقة" };
-type StatusFilter = "all" | "open" | "in_progress" | "needs_human_support" | "closed";
+const statusLabels = { open: "مفتوحة", in_progress: "قيد المعالجة", closed: "مغلقة" };
+type StatusFilter = "all" | "open" | "in_progress" | "closed";
 
 const formatDate = (value: Date | string) => new Intl.DateTimeFormat("ar-EG", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 const fileToBase64 = (file: File) => new Promise<string>((resolve, reject) => {
@@ -35,8 +36,8 @@ const fileToBase64 = (file: File) => new Promise<string>((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
-function StatusBadge({ status }: { status: "open" | "in_progress" | "needs_human_support" | "closed" }) {
-  const colors = { open: "bg-blue-100 text-blue-700", in_progress: "bg-amber-100 text-amber-700", needs_human_support: "bg-rose-100 text-rose-700", closed: "bg-slate-200 text-slate-600" };
+function StatusBadge({ status }: { status: "open" | "in_progress" | "closed" }) {
+  const colors = { open: "bg-blue-100 text-blue-700", in_progress: "bg-amber-100 text-amber-700", closed: "bg-slate-200 text-slate-600" };
   return <Badge className={`border-0 px-2.5 py-1 font-medium hover:${colors[status]} ${colors[status]}`}>{statusLabels[status]}</Badge>;
 }
 
@@ -181,6 +182,6 @@ function InboxContent() {
 export default function Dashboard() {
   const [location] = useLocation();
   const pathname = location.split("?")[0];
-  const content = pathname.startsWith("/dashboard/contacts/") && pathname.endsWith("/experience") ? <ClientExperienceStudio /> : pathname === "/dashboard/contacts" ? <Contacts /> : pathname === "/dashboard/requests" ? <Requests /> : pathname === "/dashboard/chats" || pathname === "/dashboard/archive" ? <InboxContent /> : pathname === "/dashboard/invitations" ? <Invitations /> : pathname === "/dashboard/calls" ? <CallLogs /> : pathname === "/dashboard/app-agent" ? <AgentConsole /> : pathname === "/dashboard/voice-ai" ? <VoiceStatus /> : pathname === "/dashboard/voice-models" ? <VoiceModels /> : pathname === "/dashboard/settings" ? <Settings /> : <OperationsDashboard />;
+  const content = pathname === "/dashboard/contacts" ? <Contacts /> : pathname === "/dashboard/customer-ui" ? <CustomerUiBuilder /> : pathname === "/dashboard/requests" ? <Requests /> : pathname === "/dashboard/chats" || pathname === "/dashboard/archive" ? <InboxContent /> : pathname === "/dashboard/invitations" ? <Invitations /> : pathname === "/dashboard/calls" ? <CallLogs /> : pathname === "/dashboard/statuses" ? <InstitutionStatusStudio /> : pathname === "/dashboard/app-agent" ? <AgentConsole /> : pathname === "/dashboard/voice-ai" ? <VoiceStatus /> : pathname === "/dashboard/voice-models" ? <VoiceModels /> : pathname === "/dashboard/settings" ? <Settings /> : <OperationsDashboard />;
   return <DashboardLayout>{content}<OwnerCallListener /><AgentErrorMonitor /><AgentBrandSettings /></DashboardLayout>;
 }

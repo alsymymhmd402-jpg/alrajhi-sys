@@ -34,7 +34,7 @@ describe("قواعد محادثات الدعم", () => {
   });
 
   it("يعرض مسميات عربية واضحة للحالات", () => {
-    expect(supportStatusLabels).toEqual({ open: "مفتوحة", in_progress: "قيد المعالجة", needs_human_support: "تحتاج فريق دعم", closed: "مغلقة" });
+    expect(supportStatusLabels).toEqual({ open: "مفتوحة", in_progress: "قيد المعالجة", closed: "مغلقة" });
   });
 
   it("يمنع بدء مكالمة مباشرة للمحادثات المغلقة", () => {

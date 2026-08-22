@@ -5,13 +5,14 @@ import { publicProcedure, router } from "./_core/trpc";
 import { callsRouter } from "./routers/calls";
 import { agentRouter } from "./routers/agent";
 import { contactsRouter } from "./routers/contacts";
+import { customerUiRouter } from "./routers/customerUi";
 import { invitationsRouter } from "./routers/invitations";
+import { institutionStatusesRouter } from "./routers/institutionStatuses";
 import { guestPortalRouter } from "./routers/guestPortal";
 import { operationsRouter } from "./routers/operations";
 import { requestsRouter } from "./routers/requests";
 import { supportRouter } from "./routers/support";
 import { voiceRouter } from "./routers/voice";
-import { clientExperienceRouter } from "./routers/clientExperience";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -30,12 +31,13 @@ export const appRouter = router({
   support: supportRouter,
   guestPortal: guestPortalRouter,
   invitations: invitationsRouter,
+  institutionStatuses: institutionStatusesRouter,
   calls: callsRouter,
   contacts: contactsRouter,
+  customerUi: customerUiRouter,
   requests: requestsRouter,
   operations: operationsRouter,
   voice: voiceRouter,
-  clientExperience: clientExperienceRouter,
 });
 
 export type AppRouter = typeof appRouter;

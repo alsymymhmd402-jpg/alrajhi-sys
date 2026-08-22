@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, like, or } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   agentAlerts,
@@ -6,13 +6,19 @@ import {
   agentProposals,
   agentThreads,
   callLogs,
-  clientExperiences,
   contacts,
   conversations,
   ConversationStatus,
+  customerUiAuditLogs,
+  customerUiConfigs,
+  customerUiNotifications,
+  customerUiRevisions,
+  customerUiTemplates,
   invitations,
   guestPhoneChallenges,
   guestSessions,
+  institutionStatuses,
+  institutionStatusViews,
   InsertUser,
   messageAttachments,
   serviceRequests,
@@ -197,71 +203,6 @@ export async function getGuestProfile(publicId: string, accessToken: string) {
   return { conversation, contact };
 }
 
-export const getClientExperienceDefaults = (contactId: number) => ({
-  id: null,
-  contactId,
-  headline: "متابعة طلبك مع المؤسسة",
-  bodyText: null,
-  imageUrl: null,
-  imagePosition: "top" as const,
-  imageScale: 100,
-  accentColor: "#128c7e",
-  textColor: "#0f172a",
-  displaySection: "application" as const,
-  buttonLabel: "اطلع على التفاصيل",
-  buttonEnabled: false,
-  buttonSection: "application" as const,
-  acceptanceStatus: "under_review" as const,
-  acceptanceTitle: "طلبك قيد المراجعة",
-  acceptanceNote: null,
-  notifyClient: false,
-  version: 0,
-  updatedAt: null,
-});
-
-export async function getClientExperience(contactId: number) {
-  const db = await getDb();
-  if (!db) return undefined;
-  const rows = await db.select().from(clientExperiences).where(eq(clientExperiences.contactId, contactId)).limit(1);
-  return rows[0] ?? getClientExperienceDefaults(contactId);
-}
-
-export async function getGuestClientExperience(publicId: string, accessToken: string) {
-  const conversation = await getGuestConversation(publicId, accessToken);
-  if (!conversation?.contactId) return undefined;
-  return getClientExperience(conversation.contactId);
-}
-
-export async function saveClientExperience(input: {
-  contactId: number;
-  headline: string;
-  bodyText?: string | null;
-  imageUrl?: string | null;
-  imagePosition: "top" | "inline" | "bottom";
-  imageScale: number;
-  accentColor: string;
-  textColor: string;
-  displaySection: "support" | "institution" | "profile" | "application";
-  buttonLabel: string;
-  buttonEnabled: boolean;
-  buttonSection: "support" | "institution" | "profile" | "application";
-  acceptanceStatus: "under_review" | "accepted" | "needs_action" | "not_accepted";
-  acceptanceTitle: string;
-  acceptanceNote?: string | null;
-  notifyClient: boolean;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
-  const current = await getClientExperience(input.contactId);
-  const values = { ...input, version: (current?.version ?? 0) + 1 };
-  if (current?.id) {
-    await db.update(clientExperiences).set(values).where(eq(clientExperiences.contactId, input.contactId));
-  } else {
-    await db.insert(clientExperiences).values(values);
-  }
-  return getClientExperience(input.contactId);
-}
-
 export async function updateGuestProfile(input: { publicId: string; accessToken: string; email?: string | null; phone?: string | null; extraData?: string | null }) {
   const conversation = await getGuestConversation(input.publicId, input.accessToken);
   if (!conversation?.contactId) return undefined;
@@ -373,17 +314,6 @@ export async function addOwnerMessage(conversationId: number, content: string) {
   if (conversation?.contactId) {
     await db.update(contacts).set({ lastActivityAt: new Date() }).where(eq(contacts.id, conversation.contactId));
   }
-  const messages = await db.select().from(supportMessages).where(eq(supportMessages.id, messageId)).limit(1);
-  return messages[0];
-}
-
-export async function addAssistantMessage(conversationId: number, content: string) {
-  const db = await getDb();
-  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
-  const cleanContent = content.trim();
-  const inserted = await db.insert(supportMessages).values({ conversationId, sender: "assistant", content: cleanContent });
-  const messageId = Number(inserted[0].insertId);
-  await db.update(conversations).set({ lastMessagePreview: preview(cleanContent), lastMessageAt: new Date(), ownerUnread: false }).where(eq(conversations.id, conversationId));
   const messages = await db.select().from(supportMessages).where(eq(supportMessages.id, messageId)).limit(1);
   return messages[0];
 }
@@ -880,4 +810,187 @@ export async function getOperationsActivity() {
     ...recentMessages.map(item => ({ id: `message-${item.id}`, kind: "message" as const, title: item.sender === "guest" ? "رسالة جديدة من عميل" : "رد جديد من فريق الدعم", at: item.at })),
     ...recentCalls.map(item => ({ id: `call-${item.id}`, kind: "call" as const, title: `مكالمة: ${item.status}`, at: item.at })),
   ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 10);
+}
+
+export type InstitutionStatusDraft = {
+  mediaType: "image" | "video";
+  storageKey: string;
+  mediaUrl: string;
+  fileName: string;
+  mimeType: string;
+  textContent?: string | null;
+  textColor?: string;
+  textFont?: "modern" | "classic" | "handwritten" | "bold";
+  textAlign?: "right" | "center" | "left";
+  textPositionX?: number;
+  textPositionY?: number;
+  mediaFilter?: "none" | "warm" | "cool" | "mono" | "vivid" | "fade";
+};
+
+export async function createInstitutionStatus(input: InstitutionStatusDraft) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const inserted = await db.insert(institutionStatuses).values(input);
+  const rows = await db.select().from(institutionStatuses).where(eq(institutionStatuses.id, Number(inserted[0].insertId))).limit(1);
+  return rows[0];
+}
+
+export async function listInstitutionStatuses() {
+  const db = await getDb();
+  if (!db) return [];
+  const statuses = await db.select().from(institutionStatuses).orderBy(desc(institutionStatuses.createdAt), desc(institutionStatuses.id));
+  const ids = statuses.map(status => status.id);
+  const views = ids.length ? await db.select().from(institutionStatusViews).where(inArray(institutionStatusViews.statusId, ids)) : [];
+  return statuses.map(status => ({ ...status, viewCount: views.filter(view => view.statusId === status.id).length }));
+}
+
+export async function listPublishedInstitutionStatuses() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(institutionStatuses)
+    .where(and(eq(institutionStatuses.isPublished, true), gt(institutionStatuses.expiresAt, new Date())))
+    .orderBy(asc(institutionStatuses.createdAt), asc(institutionStatuses.id));
+}
+
+export async function updateInstitutionStatus(id: number, input: Partial<InstitutionStatusDraft> & { isPublished?: boolean; expiresAt?: Date | null }) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.update(institutionStatuses).set(input).where(eq(institutionStatuses.id, id));
+  const rows = await db.select().from(institutionStatuses).where(eq(institutionStatuses.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function removeInstitutionStatus(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.delete(institutionStatusViews).where(eq(institutionStatusViews.statusId, id));
+  await db.delete(institutionStatuses).where(eq(institutionStatuses.id, id));
+}
+
+export async function markInstitutionStatusViewed(statusId: number, contactId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const existing = await db.select({ id: institutionStatusViews.id }).from(institutionStatusViews)
+    .where(and(eq(institutionStatusViews.statusId, statusId), eq(institutionStatusViews.contactId, contactId))).limit(1);
+  if (!existing[0]) await db.insert(institutionStatusViews).values({ statusId, contactId });
+}
+
+export async function getCustomerUiConfig(contactId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(customerUiConfigs).where(eq(customerUiConfigs.contactId, contactId)).orderBy(desc(customerUiConfigs.updatedAt), desc(customerUiConfigs.id)).limit(1);
+  return rows[0];
+}
+
+export async function ensureCustomerUiConfig(input: { contactId: number; name: string; document: string }) {
+  const current = await getCustomerUiConfig(input.contactId);
+  if (current) return current;
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const inserted = await db.insert(customerUiConfigs).values({ contactId: input.contactId, name: input.name, draftDocument: input.document });
+  const rows = await db.select().from(customerUiConfigs).where(eq(customerUiConfigs.id, Number(inserted[0].insertId))).limit(1);
+  return rows[0];
+}
+
+export async function listCustomerUiRevisions(contactId: number) {
+  const config = await getCustomerUiConfig(contactId);
+  if (!config) return [];
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(customerUiRevisions).where(eq(customerUiRevisions.configId, config.id)).orderBy(desc(customerUiRevisions.version), desc(customerUiRevisions.id));
+}
+
+export async function saveCustomerUiRevision(input: { contactId: number; name: string; document: string; summary: string; publish?: boolean; restored?: boolean; auditAction?: "draft_saved" | "published" | "restored" | "template_applied" }) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const config = await ensureCustomerUiConfig({ contactId: input.contactId, name: input.name, document: input.document });
+  const version = Math.max(config.draftVersion, config.publishedVersion) + 1;
+  const [inserted] = await db.insert(customerUiRevisions).values({
+    configId: config.id,
+    version,
+    document: input.document,
+    changeSummary: input.summary,
+    status: input.publish ? "published" : input.restored ? "restored" : "draft",
+    publishedAt: input.publish ? new Date() : null,
+  });
+  const revisionId = Number(inserted.insertId);
+  await db.update(customerUiConfigs).set({
+    name: input.name,
+    draftDocument: input.document,
+    draftVersion: version,
+    ...(input.publish ? { publishedVersion: version } : {}),
+  }).where(eq(customerUiConfigs.id, config.id));
+  await db.insert(customerUiAuditLogs).values({
+    contactId: input.contactId,
+    configId: config.id,
+    revisionId,
+    action: input.auditAction ?? (input.publish ? "published" : input.restored ? "restored" : "draft_saved"),
+    summary: input.summary,
+  });
+  if (input.publish) {
+    await db.insert(customerUiNotifications).values({
+      contactId: input.contactId,
+      title: "تم تحديث واجهة المراسلة",
+      body: "نُشرت واجهة جديدة مخصصة لك داخل مراسلة المؤسسة.",
+      route: "/institution",
+    });
+  }
+  const revisionRows = await db.select().from(customerUiRevisions).where(eq(customerUiRevisions.id, revisionId)).limit(1);
+  return { config: { ...config, name: input.name, draftDocument: input.document, draftVersion: version, publishedVersion: input.publish ? version : config.publishedVersion }, revision: revisionRows[0] };
+}
+
+export async function getPublishedCustomerUiDocument(contactId: number) {
+  const config = await getCustomerUiConfig(contactId);
+  if (!config?.publishedVersion) return undefined;
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(customerUiRevisions).where(and(eq(customerUiRevisions.configId, config.id), eq(customerUiRevisions.version, config.publishedVersion))).limit(1);
+  return rows[0];
+}
+
+export async function getCustomerUiRevision(contactId: number, revisionId: number) {
+  const config = await getCustomerUiConfig(contactId);
+  if (!config) return undefined;
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(customerUiRevisions).where(and(eq(customerUiRevisions.id, revisionId), eq(customerUiRevisions.configId, config.id))).limit(1);
+  return rows[0];
+}
+
+export async function listCustomerUiTemplates() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(customerUiTemplates).orderBy(desc(customerUiTemplates.updatedAt), desc(customerUiTemplates.id));
+}
+
+export async function createCustomerUiTemplate(input: { name: string; description?: string | null; document: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const inserted = await db.insert(customerUiTemplates).values(input);
+  const rows = await db.select().from(customerUiTemplates).where(eq(customerUiTemplates.id, Number(inserted[0].insertId))).limit(1);
+  return rows[0];
+}
+
+export async function removeCustomerUiTemplate(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.delete(customerUiTemplates).where(eq(customerUiTemplates.id, id));
+}
+
+export async function listCustomerUiNotifications(contactId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(customerUiNotifications).where(eq(customerUiNotifications.contactId, contactId)).orderBy(desc(customerUiNotifications.createdAt), desc(customerUiNotifications.id)).limit(20);
+}
+
+export async function markCustomerUiNotificationRead(contactId: number, notificationId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  await db.update(customerUiNotifications).set({ isRead: true }).where(and(eq(customerUiNotifications.id, notificationId), eq(customerUiNotifications.contactId, contactId)));
+}
+
+export async function listCustomerUiAuditLogs(contactId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(customerUiAuditLogs).where(eq(customerUiAuditLogs.contactId, contactId)).orderBy(desc(customerUiAuditLogs.createdAt), desc(customerUiAuditLogs.id)).limit(40);
 }

@@ -1,9 +1,5 @@
 export type ClientSection = "support" | "institution" | "profile" | "application";
 
-export function getClientEntryPath(publicId: string) {
-  return getClientSectionPath(publicId, "institution");
-}
-
 export function getClientSectionPath(publicId: string, section: ClientSection) {
   const suffix: Record<ClientSection, string> = {
     support: "chat",

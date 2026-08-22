@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "dc93ee21-abe0-4e7f-be25-2d9401e35f50",
-  "prevId": "00eb8796-f5e9-4f56-bdc8-f029caba7047",
+  "id": "92f9f95e-5d35-4706-875c-352a9048af7f",
+  "prevId": "9dff8488-5191-45b6-b2aa-89189ec3c0fe",
   "tables": {
     "agent_alerts": {
       "name": "agent_alerts",
@@ -523,186 +523,6 @@
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
-    "client_experiences": {
-      "name": "client_experiences",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "contactId": {
-          "name": "contactId",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "headline": {
-          "name": "headline",
-          "type": "varchar(180)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'متابعة طلبك مع المؤسسة'"
-        },
-        "bodyText": {
-          "name": "bodyText",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "imageUrl": {
-          "name": "imageUrl",
-          "type": "varchar(900)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "imagePosition": {
-          "name": "imagePosition",
-          "type": "enum('top','inline','bottom')",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'top'"
-        },
-        "imageScale": {
-          "name": "imageScale",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 100
-        },
-        "accentColor": {
-          "name": "accentColor",
-          "type": "varchar(7)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'#128c7e'"
-        },
-        "textColor": {
-          "name": "textColor",
-          "type": "varchar(7)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'#0f172a'"
-        },
-        "displaySection": {
-          "name": "displaySection",
-          "type": "enum('support','institution','profile','application')",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'application'"
-        },
-        "buttonLabel": {
-          "name": "buttonLabel",
-          "type": "varchar(80)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'اطلع على التفاصيل'"
-        },
-        "buttonEnabled": {
-          "name": "buttonEnabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "buttonSection": {
-          "name": "buttonSection",
-          "type": "enum('support','institution','profile','application')",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'application'"
-        },
-        "acceptanceStatus": {
-          "name": "acceptanceStatus",
-          "type": "enum('under_review','accepted','needs_action','not_accepted')",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'under_review'"
-        },
-        "acceptanceTitle": {
-          "name": "acceptanceTitle",
-          "type": "varchar(160)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'طلبك قيد المراجعة'"
-        },
-        "acceptanceNote": {
-          "name": "acceptanceNote",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "notifyClient": {
-          "name": "notifyClient",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "version": {
-          "name": "version",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 1
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "onUpdate": true,
-          "default": "(now())"
-        }
-      },
-      "indexes": {
-        "client_experiences_contact_idx": {
-          "name": "client_experiences_contact_idx",
-          "columns": [
-            "contactId"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "client_experiences_id": {
-          "name": "client_experiences_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {
-        "client_experiences_contactId_unique": {
-          "name": "client_experiences_contactId_unique",
-          "columns": [
-            "contactId"
-          ]
-        }
-      },
-      "checkConstraint": {}
-    },
     "contacts": {
       "name": "contacts",
       "columns": {
@@ -974,6 +794,400 @@
       },
       "checkConstraint": {}
     },
+    "customer_ui_audit_logs": {
+      "name": "customer_ui_audit_logs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "contactId": {
+          "name": "contactId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "configId": {
+          "name": "configId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "revisionId": {
+          "name": "revisionId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "action": {
+          "name": "action",
+          "type": "enum('draft_saved','published','restored','template_applied','status_changed')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "customer_ui_audit_logs_contact_created_idx": {
+          "name": "customer_ui_audit_logs_contact_created_idx",
+          "columns": [
+            "contactId",
+            "createdAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "customer_ui_audit_logs_id": {
+          "name": "customer_ui_audit_logs_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "customer_ui_configs": {
+      "name": "customer_ui_configs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "contactId": {
+          "name": "contactId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(160)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "draftDocument": {
+          "name": "draftDocument",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "draftVersion": {
+          "name": "draftVersion",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "publishedVersion": {
+          "name": "publishedVersion",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "customer_ui_configs_contact_idx": {
+          "name": "customer_ui_configs_contact_idx",
+          "columns": [
+            "contactId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "customer_ui_configs_id": {
+          "name": "customer_ui_configs_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "customer_ui_notifications": {
+      "name": "customer_ui_notifications",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "contactId": {
+          "name": "contactId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(180)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "body": {
+          "name": "body",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "route": {
+          "name": "route",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "isRead": {
+          "name": "isRead",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "customer_ui_notifications_contact_read_idx": {
+          "name": "customer_ui_notifications_contact_read_idx",
+          "columns": [
+            "contactId",
+            "isRead",
+            "createdAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "customer_ui_notifications_id": {
+          "name": "customer_ui_notifications_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "customer_ui_revisions": {
+      "name": "customer_ui_revisions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "configId": {
+          "name": "configId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "version": {
+          "name": "version",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "document": {
+          "name": "document",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "changeSummary": {
+          "name": "changeSummary",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "enum('draft','published','restored')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'draft'"
+        },
+        "publishedAt": {
+          "name": "publishedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "customer_ui_revisions_config_version_idx": {
+          "name": "customer_ui_revisions_config_version_idx",
+          "columns": [
+            "configId",
+            "version"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "customer_ui_revisions_id": {
+          "name": "customer_ui_revisions_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "customer_ui_templates": {
+      "name": "customer_ui_templates",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(160)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "document": {
+          "name": "document",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "customer_ui_templates_name_idx": {
+          "name": "customer_ui_templates_name_idx",
+          "columns": [
+            "name"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "customer_ui_templates_id": {
+          "name": "customer_ui_templates_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
     "guest_phone_challenges": {
       "name": "guest_phone_challenges",
       "columns": {
@@ -1178,6 +1392,229 @@
           ]
         }
       },
+      "checkConstraint": {}
+    },
+    "institution_status_views": {
+      "name": "institution_status_views",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "statusId": {
+          "name": "statusId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "contactId": {
+          "name": "contactId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "viewedAt": {
+          "name": "viewedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "institution_status_views_status_idx": {
+          "name": "institution_status_views_status_idx",
+          "columns": [
+            "statusId"
+          ],
+          "isUnique": false
+        },
+        "institution_status_views_contact_idx": {
+          "name": "institution_status_views_contact_idx",
+          "columns": [
+            "contactId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "institution_status_views_id": {
+          "name": "institution_status_views_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "institution_statuses": {
+      "name": "institution_statuses",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "mediaType": {
+          "name": "mediaType",
+          "type": "enum('image','video')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "storageKey": {
+          "name": "storageKey",
+          "type": "varchar(700)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mediaUrl": {
+          "name": "mediaUrl",
+          "type": "varchar(900)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "fileName": {
+          "name": "fileName",
+          "type": "varchar(260)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mimeType": {
+          "name": "mimeType",
+          "type": "varchar(140)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "textContent": {
+          "name": "textContent",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "textColor": {
+          "name": "textColor",
+          "type": "varchar(7)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'#ffffff'"
+        },
+        "textFont": {
+          "name": "textFont",
+          "type": "enum('modern','classic','handwritten','bold')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'modern'"
+        },
+        "textAlign": {
+          "name": "textAlign",
+          "type": "enum('right','center','left')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'center'"
+        },
+        "textPositionX": {
+          "name": "textPositionX",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 50
+        },
+        "textPositionY": {
+          "name": "textPositionY",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 76
+        },
+        "mediaFilter": {
+          "name": "mediaFilter",
+          "type": "enum('none','warm','cool','mono','vivid','fade')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'none'"
+        },
+        "isPublished": {
+          "name": "isPublished",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "expiresAt": {
+          "name": "expiresAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "institution_statuses_published_expires_idx": {
+          "name": "institution_statuses_published_expires_idx",
+          "columns": [
+            "isPublished",
+            "expiresAt"
+          ],
+          "isUnique": false
+        },
+        "institution_statuses_created_idx": {
+          "name": "institution_statuses_created_idx",
+          "columns": [
+            "createdAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "institution_statuses_id": {
+          "name": "institution_statuses_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
       "checkConstraint": {}
     },
     "invitations": {
