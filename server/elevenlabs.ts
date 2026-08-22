@@ -56,7 +56,7 @@ export async function synthesizeVoicePreview(voiceId: string) {
     headers: { "xi-api-key": getApiKey(), "Content-Type": "application/json" },
     body: JSON.stringify({
       text: "مرحباً، هذا مثال للصوت المختار في Voice Circle.",
-      model_id: "eleven_multilingual_v2",
+      model_id: "eleven_flash_v2_5",
       language_code: "ar",
     }),
   });
