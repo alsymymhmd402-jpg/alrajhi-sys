@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, like, or } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, gt, inArray, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   agentAlerts,
@@ -177,7 +177,12 @@ export async function createSupportConversation(input: {
 export async function getSupportConversationById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const rows = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1);
+  const rows = await db
+    .select({ ...getTableColumns(conversations), avatarUrl: contacts.avatarUrl })
+    .from(conversations)
+    .leftJoin(contacts, eq(conversations.contactId, contacts.id))
+    .where(eq(conversations.id, id))
+    .limit(1);
   return rows[0];
 }
 
@@ -248,8 +253,9 @@ export async function listSupportConversations(input: {
   }
 
   return db
-    .select()
+    .select({ ...getTableColumns(conversations), avatarUrl: contacts.avatarUrl })
     .from(conversations)
+    .leftJoin(contacts, eq(conversations.contactId, contacts.id))
     .where(and(...conditions))
     .orderBy(desc(conversations.ownerUnread), desc(conversations.lastMessageAt));
 }

@@ -37,6 +37,7 @@ function Router() {
       <Route path={"/dashboard/contacts"} component={Dashboard} />
       <Route path={"/dashboard/customer-ui"} component={Dashboard} />
       <Route path={"/dashboard/requests"} component={Dashboard} />
+      <Route path={"/dashboard/chats/:conversationId"} component={Dashboard} />
       <Route path={"/dashboard/chats"} component={Dashboard} />
       <Route path={"/dashboard/invitations"} component={Dashboard} />
       <Route path={"/dashboard/calls"} component={Dashboard} />

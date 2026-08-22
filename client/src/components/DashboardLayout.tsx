@@ -10,7 +10,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
@@ -32,6 +31,14 @@ const menuItems = [
   { icon: Waves, label: "النماذج الصوتية", path: "/dashboard/voice-models" },
   { icon: Settings2, label: "الإعدادات", path: "/dashboard/settings" },
   { icon: Archive, label: "الأرشيف", path: "/dashboard/archive" },
+];
+
+const mobileNavItems = [
+  { icon: LayoutDashboard, label: "الرئيسية", path: "/" },
+  { icon: UsersRound, label: "العملاء", path: "/dashboard/contacts" },
+  { icon: MessageSquareText, label: "المراسلات", path: "/dashboard/chats" },
+  { icon: ClipboardList, label: "الطلبات", path: "/dashboard/requests" },
+  { icon: Settings2, label: "الإعدادات", path: "/dashboard/settings" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -78,11 +85,12 @@ function DashboardLayoutContent({
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
   const [location, setLocation] = useLocation();
+  const pathname = location.split("?")[0];
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const activeMenuItem = menuItems.find(item => item.path === pathname);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -127,7 +135,7 @@ function DashboardLayoutContent({
         <Sidebar
           collapsible="icon"
           side="right"
-          className="border-l-0"
+          className="hidden border-l-0 md:flex"
           disableTransition={isResizing}
         >
           <SidebarHeader className="h-16 justify-center">
@@ -150,7 +158,7 @@ function DashboardLayoutContent({
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
               {menuItems.map(item => {
-                const isActive = location === item.path;
+                const isActive = pathname === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
@@ -179,7 +187,7 @@ function DashboardLayoutContent({
           </SidebarFooter>
         </Sidebar>
         <div
-          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}
+          className={`absolute top-0 right-0 hidden h-full w-1 cursor-col-resize transition-colors hover:bg-primary/20 md:block ${isCollapsed ? "!hidden" : ""}`}
           onMouseDown={() => {
             if (isCollapsed) return;
             setIsResizing(true);
@@ -192,7 +200,6 @@ function DashboardLayoutContent({
         {isMobile && (
           <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
             <div className="flex items-center gap-2">
-              <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
               <div className="flex items-center gap-3">
                 <div className="flex flex-col gap-1">
                   <span className="tracking-tight text-foreground">
@@ -204,8 +211,18 @@ function DashboardLayoutContent({
             <button onClick={() => setLocation("/dashboard/invitations?create=1")} className="flex h-9 items-center gap-1 rounded-lg bg-blue-600 px-3 text-xs font-bold text-white shadow-sm transition-colors hover:bg-blue-700"><Link2 className="size-4" />رابط عميل</button>
           </div>
         )}
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 p-4 pb-24 md:pb-4">{children}</main>
       </SidebarInset>
+      {isMobile && (
+        <nav aria-label="تنقل غرفة العمليات" className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-2 pb-[max(0.45rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_35px_-25px_rgba(15,23,42,.42)] backdrop-blur md:hidden" dir="rtl">
+          <div className="mx-auto grid max-w-lg grid-cols-5 gap-1">
+            {mobileNavItems.map(item => {
+              const isActive = item.path === "/" ? pathname === "/" || pathname === "/dashboard" : pathname === item.path;
+              return <button key={item.path} type="button" onClick={() => setLocation(item.path)} className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold transition ${isActive ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-50"}`}><item.icon className="size-4" /><span className="truncate">{item.label}</span></button>;
+            })}
+          </div>
+        </nav>
+      )}
     </>
   );
 }

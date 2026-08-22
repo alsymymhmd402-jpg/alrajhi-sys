@@ -25,6 +25,8 @@ type SupportChatThreadProps = {
   viewer: "guest" | "owner";
   title: string;
   subtitle: string;
+  avatarUrl?: string | null;
+  headerMenu?: React.ReactNode;
   disabled?: boolean;
   isSending?: boolean;
   onSend: (content: string) => void;
@@ -42,6 +44,8 @@ export function SupportChatThread({
   viewer,
   title,
   subtitle,
+  avatarUrl,
+  headerMenu,
   disabled = false,
   isSending = false,
   onSend,
@@ -94,7 +98,7 @@ export function SupportChatThread({
           <h2 className="text-base font-bold text-slate-900">{title}</h2>
           <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
         </div>
-        <span className="flex size-10 items-center justify-center rounded-2xl bg-blue-600 text-sm font-bold text-white">VC</span>
+        <div className="flex items-center gap-2">{headerMenu}<span className="flex size-10 items-center justify-center overflow-hidden rounded-2xl bg-blue-600 text-sm font-bold text-white">{avatarUrl ? <img src={avatarUrl} alt={title} className="h-full w-full object-cover" /> : "VC"}</span></div>
       </header>
 
       <div className="min-h-[360px] flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(219,234,254,0.45),transparent_34%)] px-4 py-5 sm:px-6">

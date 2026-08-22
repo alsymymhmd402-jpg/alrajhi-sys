@@ -14,6 +14,7 @@ import Requests from "@/pages/Requests";
 import Settings from "@/pages/Settings";
 import { VoiceModels, VoiceStatus } from "@/pages/VoiceConsole";
 import { SupportChatThread } from "@/components/SupportChatThread";
+import { OwnerChatDetailPage, OwnerChatsListPage } from "@/pages/OwnerChats";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -182,6 +183,6 @@ function InboxContent() {
 export default function Dashboard() {
   const [location] = useLocation();
   const pathname = location.split("?")[0];
-  const content = pathname === "/dashboard/contacts" ? <Contacts /> : pathname === "/dashboard/customer-ui" ? <CustomerUiBuilder /> : pathname === "/dashboard/requests" ? <Requests /> : pathname === "/dashboard/chats" || pathname === "/dashboard/archive" ? <InboxContent /> : pathname === "/dashboard/invitations" ? <Invitations /> : pathname === "/dashboard/calls" ? <CallLogs /> : pathname === "/dashboard/statuses" ? <InstitutionStatusStudio /> : pathname === "/dashboard/app-agent" ? <AgentConsole /> : pathname === "/dashboard/voice-ai" ? <VoiceStatus /> : pathname === "/dashboard/voice-models" ? <VoiceModels /> : pathname === "/dashboard/settings" ? <Settings /> : <OperationsDashboard />;
+  const content = pathname === "/dashboard/contacts" ? <Contacts /> : pathname === "/dashboard/customer-ui" ? <CustomerUiBuilder /> : pathname === "/dashboard/requests" ? <Requests /> : pathname.startsWith("/dashboard/chats/") ? <OwnerChatDetailPage /> : pathname === "/dashboard/chats" ? <OwnerChatsListPage /> : pathname === "/dashboard/archive" ? <InboxContent /> : pathname === "/dashboard/invitations" ? <Invitations /> : pathname === "/dashboard/calls" ? <CallLogs /> : pathname === "/dashboard/statuses" ? <InstitutionStatusStudio /> : pathname === "/dashboard/app-agent" ? <AgentConsole /> : pathname === "/dashboard/voice-ai" ? <VoiceStatus /> : pathname === "/dashboard/voice-models" ? <VoiceModels /> : pathname === "/dashboard/settings" ? <Settings /> : <OperationsDashboard />;
   return <DashboardLayout>{content}<OwnerCallListener /><AgentErrorMonitor /><AgentBrandSettings /></DashboardLayout>;
 }
