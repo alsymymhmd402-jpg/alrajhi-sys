@@ -78,6 +78,20 @@
       "when": 1787349915147,
       "tag": "0010_fluffy_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1787361994777,
+      "tag": "0011_cuddly_kingpin",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1787362611015,
+      "tag": "0012_volatile_harry_osborn",
+      "breakpoints": true
     }
   ]
 }

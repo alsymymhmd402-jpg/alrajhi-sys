@@ -10,6 +10,7 @@ import Invitations from "@/pages/Invitations";
 import OperationsDashboard from "@/pages/OperationsDashboard";
 import Requests from "@/pages/Requests";
 import Settings from "@/pages/Settings";
+import ClientExperienceStudio from "@/pages/ClientExperienceStudio";
 import { VoiceModels, VoiceStatus } from "@/pages/VoiceConsole";
 import { SupportChatThread } from "@/components/SupportChatThread";
 import { Badge } from "@/components/ui/badge";
@@ -180,6 +181,6 @@ function InboxContent() {
 export default function Dashboard() {
   const [location] = useLocation();
   const pathname = location.split("?")[0];
-  const content = pathname === "/dashboard/contacts" ? <Contacts /> : pathname === "/dashboard/requests" ? <Requests /> : pathname === "/dashboard/chats" || pathname === "/dashboard/archive" ? <InboxContent /> : pathname === "/dashboard/invitations" ? <Invitations /> : pathname === "/dashboard/calls" ? <CallLogs /> : pathname === "/dashboard/app-agent" ? <AgentConsole /> : pathname === "/dashboard/voice-ai" ? <VoiceStatus /> : pathname === "/dashboard/voice-models" ? <VoiceModels /> : pathname === "/dashboard/settings" ? <Settings /> : <OperationsDashboard />;
+  const content = pathname.startsWith("/dashboard/contacts/") && pathname.endsWith("/experience") ? <ClientExperienceStudio /> : pathname === "/dashboard/contacts" ? <Contacts /> : pathname === "/dashboard/requests" ? <Requests /> : pathname === "/dashboard/chats" || pathname === "/dashboard/archive" ? <InboxContent /> : pathname === "/dashboard/invitations" ? <Invitations /> : pathname === "/dashboard/calls" ? <CallLogs /> : pathname === "/dashboard/app-agent" ? <AgentConsole /> : pathname === "/dashboard/voice-ai" ? <VoiceStatus /> : pathname === "/dashboard/voice-models" ? <VoiceModels /> : pathname === "/dashboard/settings" ? <Settings /> : <OperationsDashboard />;
   return <DashboardLayout>{content}<OwnerCallListener /><AgentErrorMonitor /><AgentBrandSettings /></DashboardLayout>;
 }

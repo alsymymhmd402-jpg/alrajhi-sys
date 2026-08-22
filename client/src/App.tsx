@@ -37,6 +37,7 @@ function Router() {
       <Route path={"/invite/:code"} component={InviteGuest} />
       <Route path={"/dashboard"} component={Dashboard} />
       <Route path={"/dashboard/contacts"} component={Dashboard} />
+      <Route path={"/dashboard/contacts/:contactId/experience"} component={Dashboard} />
       <Route path={"/dashboard/requests"} component={Dashboard} />
       <Route path={"/dashboard/chats"} component={Dashboard} />
       <Route path={"/dashboard/invitations"} component={Dashboard} />

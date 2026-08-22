@@ -176,6 +176,33 @@ export const serviceRequests = mysqlTable(
   ],
 );
 
+/** Per-customer presentation settings controlled by the support team, never shared between customers. */
+export const clientExperiences = mysqlTable(
+  "client_experiences",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    contactId: int("contactId").notNull().unique(),
+    headline: varchar("headline", { length: 180 }).default("متابعة طلبك مع المؤسسة").notNull(),
+    bodyText: text("bodyText"),
+    imageUrl: varchar("imageUrl", { length: 900 }),
+    imagePosition: mysqlEnum("imagePosition", ["top", "inline", "bottom"]).default("top").notNull(),
+    imageScale: int("imageScale").default(100).notNull(),
+    accentColor: varchar("accentColor", { length: 7 }).default("#128c7e").notNull(),
+    textColor: varchar("textColor", { length: 7 }).default("#0f172a").notNull(),
+    displaySection: mysqlEnum("displaySection", ["support", "institution", "profile", "application"]).default("application").notNull(),
+    buttonLabel: varchar("buttonLabel", { length: 80 }).default("اطلع على التفاصيل").notNull(),
+    buttonEnabled: boolean("buttonEnabled").default(false).notNull(),
+    buttonSection: mysqlEnum("buttonSection", ["support", "institution", "profile", "application"]).default("application").notNull(),
+    acceptanceStatus: mysqlEnum("acceptanceStatus", ["under_review", "accepted", "needs_action", "not_accepted"]).default("under_review").notNull(),
+    acceptanceTitle: varchar("acceptanceTitle", { length: 160 }).default("طلبك قيد المراجعة").notNull(),
+    acceptanceNote: text("acceptanceNote"),
+    notifyClient: boolean("notifyClient").default(false).notNull(),
+    version: int("version").default(1).notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("client_experiences_contact_idx").on(table.contactId)],
+);
+
 /** A file or image attached to a support message, stored externally in S3. */
 export const messageAttachments = mysqlTable(
   "message_attachments",
@@ -315,6 +342,7 @@ export type CallLog = typeof callLogs.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
 export type GuestSession = typeof guestSessions.$inferSelect;
 export type ServiceRequest = typeof serviceRequests.$inferSelect;
+export type ClientExperience = typeof clientExperiences.$inferSelect;
 export type MessageAttachment = typeof messageAttachments.$inferSelect;
 export type VoiceModel = typeof voiceModels.$inferSelect;
 export type AgentThread = typeof agentThreads.$inferSelect;

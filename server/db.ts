@@ -6,6 +6,7 @@ import {
   agentProposals,
   agentThreads,
   callLogs,
+  clientExperiences,
   contacts,
   conversations,
   ConversationStatus,
@@ -194,6 +195,71 @@ export async function getGuestProfile(publicId: string, accessToken: string) {
     ? (await db.select().from(contacts).where(eq(contacts.id, conversation.contactId)).limit(1))[0]
     : undefined;
   return { conversation, contact };
+}
+
+export const getClientExperienceDefaults = (contactId: number) => ({
+  id: null,
+  contactId,
+  headline: "متابعة طلبك مع المؤسسة",
+  bodyText: null,
+  imageUrl: null,
+  imagePosition: "top" as const,
+  imageScale: 100,
+  accentColor: "#128c7e",
+  textColor: "#0f172a",
+  displaySection: "application" as const,
+  buttonLabel: "اطلع على التفاصيل",
+  buttonEnabled: false,
+  buttonSection: "application" as const,
+  acceptanceStatus: "under_review" as const,
+  acceptanceTitle: "طلبك قيد المراجعة",
+  acceptanceNote: null,
+  notifyClient: false,
+  version: 0,
+  updatedAt: null,
+});
+
+export async function getClientExperience(contactId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(clientExperiences).where(eq(clientExperiences.contactId, contactId)).limit(1);
+  return rows[0] ?? getClientExperienceDefaults(contactId);
+}
+
+export async function getGuestClientExperience(publicId: string, accessToken: string) {
+  const conversation = await getGuestConversation(publicId, accessToken);
+  if (!conversation?.contactId) return undefined;
+  return getClientExperience(conversation.contactId);
+}
+
+export async function saveClientExperience(input: {
+  contactId: number;
+  headline: string;
+  bodyText?: string | null;
+  imageUrl?: string | null;
+  imagePosition: "top" | "inline" | "bottom";
+  imageScale: number;
+  accentColor: string;
+  textColor: string;
+  displaySection: "support" | "institution" | "profile" | "application";
+  buttonLabel: string;
+  buttonEnabled: boolean;
+  buttonSection: "support" | "institution" | "profile" | "application";
+  acceptanceStatus: "under_review" | "accepted" | "needs_action" | "not_accepted";
+  acceptanceTitle: string;
+  acceptanceNote?: string | null;
+  notifyClient: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
+  const current = await getClientExperience(input.contactId);
+  const values = { ...input, version: (current?.version ?? 0) + 1 };
+  if (current?.id) {
+    await db.update(clientExperiences).set(values).where(eq(clientExperiences.contactId, input.contactId));
+  } else {
+    await db.insert(clientExperiences).values(values);
+  }
+  return getClientExperience(input.contactId);
 }
 
 export async function updateGuestProfile(input: { publicId: string; accessToken: string; email?: string | null; phone?: string | null; extraData?: string | null }) {

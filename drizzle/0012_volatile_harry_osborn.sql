@@ -1,0 +1,1 @@
+ALTER TABLE `client_experiences` ADD `displaySection` enum('support','institution','profile','application') DEFAULT 'application' NOT NULL;
