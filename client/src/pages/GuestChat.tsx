@@ -1,5 +1,4 @@
 import { InstitutionChat } from "@/components/InstitutionChat";
-import { ClientBottomNav } from "@/components/ClientBottomNav";
 import { GuestCallControl } from "@/components/GuestCallControl";
 import { GuestIncomingCall } from "@/components/GuestIncomingCall";
 import { Button } from "@/components/ui/button";
@@ -83,11 +82,17 @@ export default function GuestChat() {
   }
 
   const { conversation, messages, attachments } = conversationQuery.data;
+  const mode = new URLSearchParams(window.location.search).get("mode");
+  const assistantMode = mode === "assistant";
+  const acceptanceMode = mode === "acceptance";
   return <>
     <InstitutionChat
       messages={messages}
       attachments={attachments}
       guestName={conversation.guestName}
+      title={assistantMode ? "المساعد الآلي للمؤسسة" : acceptanceMode ? "متابعة الطلب والقبول" : "مراسلة المؤسسة"}
+      subtitle={assistantMode ? "اسأل عن خدمات المؤسسة والطلبات العامة" : acceptanceMode ? "استفسر عن مراحل طلبك وتحديثاته" : "فريق خدمة العملاء متاح لمساعدتك"}
+      onBack={() => setLocation(`/client/${publicId}/messages`)}
       disabled={conversation.status === "closed"}
       isSending={sendMutation.isPending || attachmentMutation.isPending}
       onSend={content => sendMutation.mutate({ publicId, accessToken, content })}
@@ -97,7 +102,6 @@ export default function GuestChat() {
       }}
       callControl={<GuestCallControl publicId={publicId} accessToken={accessToken} disabled={conversation.status === "closed"} compact />}
       onVideoRequest={() => toast.message("يتطلب الاتصال المرئي تفعيل مسار فيديو WebRTC منفصل؛ الاتصال الصوتي متاح الآن.")}
-      footer={<ClientBottomNav publicId={publicId} active="support" />}
     />
     <GuestIncomingCall publicId={publicId} accessToken={accessToken} />
   </>;
