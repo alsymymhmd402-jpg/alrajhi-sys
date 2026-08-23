@@ -28,6 +28,7 @@ import {
   voiceModels,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import type { SupportChannel } from "../shared/supportChannels";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -260,13 +261,13 @@ export async function listSupportConversations(input: {
     .orderBy(desc(conversations.ownerUnread), desc(conversations.lastMessageAt));
 }
 
-export async function listSupportMessages(conversationId: number) {
+export async function listSupportMessages(conversationId: number, channel: SupportChannel = "institution") {
   const db = await getDb();
   if (!db) return [];
   return db
     .select()
     .from(supportMessages)
-    .where(eq(supportMessages.conversationId, conversationId))
+    .where(and(eq(supportMessages.conversationId, conversationId), eq(supportMessages.channel, channel)))
     .orderBy(asc(supportMessages.createdAt), asc(supportMessages.id));
 }
 
@@ -274,6 +275,7 @@ export async function addGuestMessage(input: {
   publicId: string;
   accessToken: string;
   content: string;
+  channel?: SupportChannel;
 }) {
   const conversation = await getGuestConversation(input.publicId, input.accessToken);
   if (!conversation) return { conversation: undefined, message: undefined, reason: "not_found" as const };
@@ -286,6 +288,7 @@ export async function addGuestMessage(input: {
   const content = input.content.trim();
   const inserted = await db.insert(supportMessages).values({
     conversationId: conversation.id,
+    channel: input.channel ?? "institution",
     sender: "guest",
     content,
   });
@@ -302,12 +305,13 @@ export async function addGuestMessage(input: {
   return { conversation: await getSupportConversationById(conversation.id), message: messages[0], reason: undefined };
 }
 
-export async function addOwnerMessage(conversationId: number, content: string) {
+export async function addOwnerMessage(conversationId: number, content: string, channel: SupportChannel = "institution") {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً.");
   const cleanContent = content.trim();
   const inserted = await db.insert(supportMessages).values({
     conversationId,
+    channel,
     sender: "owner",
     content: cleanContent,
   });

@@ -1,4 +1,5 @@
 import { boolean, index, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { supportChannelValues } from "../shared/supportChannels";
 
 /**
  * Core user table backing auth flow.
@@ -59,12 +60,13 @@ export const supportMessages = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     conversationId: int("conversationId").notNull(),
+    channel: mysqlEnum("channel", supportChannelValues).default("institution").notNull(),
     sender: mysqlEnum("sender", ["guest", "owner", "system"]).notNull(),
     content: text("content").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   table => [
-    index("support_messages_conversation_created_idx").on(table.conversationId, table.createdAt),
+    index("support_messages_conversation_channel_created_idx").on(table.conversationId, table.channel, table.createdAt),
   ],
 );
 

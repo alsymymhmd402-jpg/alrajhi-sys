@@ -30,3 +30,17 @@ export function addInstitutionResourceHints() {
   prefetch.setAttribute("data-institution-prefetch", "true");
   document.head.appendChild(prefetch);
 }
+
+export function primeInstitutionSite() {
+  addInstitutionResourceHints();
+  if (hasInstitutionPreload() || document.body.querySelector("[data-institution-primer]")) return;
+  const frame = document.createElement("iframe");
+  frame.src = institutionUrl;
+  frame.tabIndex = -1;
+  frame.setAttribute("aria-hidden", "true");
+  frame.setAttribute("data-institution-primer", "true");
+  frame.style.cssText = "position:fixed;left:-9999px;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0";
+  const finish = () => { markInstitutionPreloaded(); window.setTimeout(() => frame.remove(), 1500); };
+  frame.addEventListener("load", finish, { once: true });
+  document.body.appendChild(frame);
+}

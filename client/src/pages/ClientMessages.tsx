@@ -3,7 +3,7 @@ import ClientSessionUnavailable from "@/pages/ClientSessionUnavailable";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getClientSession } from "@/lib/clientSession";
 import { trpc } from "@/lib/trpc";
-import { Bot, ChevronLeft, ClipboardCheck, Loader2, MessageCircleMore, ShieldCheck } from "lucide-react";
+import { BadgeDollarSign, ChevronLeft, ClipboardCheck, Loader2, MessageCircleMore, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
 import { useLocation, useRoute } from "wouter";
 
@@ -20,16 +20,21 @@ export default function ClientMessages() {
   const [, setLocation] = useLocation();
   const publicId = params?.publicId ?? "";
   const accessToken = useMemo(() => publicId ? getClientSession(publicId) : null, [publicId]);
-  const conversationQuery = trpc.support.guestConversation.useQuery({ publicId, accessToken: accessToken ?? "" }, { enabled: Boolean(publicId && accessToken), refetchInterval: 3000 });
+  const institutionQuery = trpc.support.guestConversation.useQuery({ publicId, accessToken: accessToken ?? "", channel: "institution" }, { enabled: Boolean(publicId && accessToken), refetchInterval: 3000 });
+  const financeQuery = trpc.support.guestConversation.useQuery({ publicId, accessToken: accessToken ?? "", channel: "finance" }, { enabled: Boolean(publicId && accessToken), refetchInterval: 3000 });
+  const followUpQuery = trpc.support.guestConversation.useQuery({ publicId, accessToken: accessToken ?? "", channel: "follow_up" }, { enabled: Boolean(publicId && accessToken), refetchInterval: 3000 });
   const applicationQuery = trpc.support.guestApplications.useQuery({ publicId, accessToken: accessToken ?? "" }, { enabled: Boolean(publicId && accessToken), refetchInterval: 5000 });
   if (!accessToken) return <ClientSessionUnavailable />;
-  if (conversationQuery.isLoading) return <div className="flex min-h-screen items-center justify-center bg-[#0b141a]"><Loader2 className="size-7 animate-spin text-[#00a884]" /></div>;
-  const conversation = conversationQuery.data?.conversation;
+  if (institutionQuery.isLoading) return <div className="flex min-h-screen items-center justify-center bg-[#0b141a]"><Loader2 className="size-7 animate-spin text-[#00a884]" /></div>;
+  const conversation = institutionQuery.data?.conversation;
+  const institutionLast = institutionQuery.data?.messages.at(-1);
+  const financeLast = financeQuery.data?.messages.at(-1);
+  const followUpLast = followUpQuery.data?.messages.at(-1);
   const request = applicationQuery.data?.requests[0];
   return <main className="h-[100dvh] overflow-hidden bg-[#07100d] p-0 sm:flex sm:items-center sm:justify-center sm:p-6" dir="rtl"><section className="mx-auto flex h-[100dvh] w-full max-w-md flex-col overflow-hidden bg-[#0b141a] shadow-2xl sm:h-[min(92dvh,820px)] sm:rounded-[2rem]">
-    <header className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#17252b] px-4 py-4 text-white"><div className="flex items-center gap-3"><Avatar className="size-11 border border-[#00a884]/50"><AvatarImage src={logoUrl} alt="مؤسسة الوليد بن طلال الإنسانية" /><AvatarFallback>م</AvatarFallback></Avatar><div><h1 className="text-base font-extrabold">مراسلة المؤسسة</h1><p className="mt-0.5 text-[11px] text-[#9bb4ac]">قنوات التواصل والمتابعة</p></div></div><span className="flex size-9 items-center justify-center rounded-xl bg-[#00a884]/15 text-[#00d9a9]"><MessageCircleMore className="size-5" /></span></header>
-    <div className="flex shrink-0 items-center gap-2 border-b border-white/10 bg-[#111c21] px-4 py-3 text-xs text-[#b6d4ca]"><ShieldCheck className="size-4 text-[#00a884]" />اختر إحدى المحادثات الثلاث للبدء أو المتابعة.</div>
-    <div className="min-h-0 flex-1 overflow-y-auto"><ChannelRow icon={<img src={logoUrl} alt="" className="h-full w-full object-cover" />} iconTone="overflow-hidden bg-[#075e54]" title="مؤسسة الوليد بن طلال للإنسانية" preview={conversation?.lastMessagePreview || "مرحباً بك، كيف يمكننا مساعدتك؟"} meta={formatTime(conversation?.lastMessageAt) || "الآن"} unread={conversation?.status === "open"} onClick={() => setLocation(`/client/${publicId}/chat`)} /><ChannelRow icon={<Bot className="size-6" />} iconTone="bg-[#123d49] text-[#62d6e8]" title="المساعد الآلي للمؤسسة" preview="اسأل عن خدمات المؤسسة والطلبات العامة" meta="متاح" onClick={() => setLocation(`/client/${publicId}/chat?mode=assistant`)} /><ChannelRow icon={<ClipboardCheck className="size-6" />} iconTone="bg-[#3d3020] text-[#ffce7a]" title="متابعة الطلب والقبول" preview={request ? `${request.requestNumber} · ${request.title}` : "ستظهر حالة طلبك وتحديثاته هنا"} meta="متابعة" onClick={() => setLocation(`/client/${publicId}/chat?mode=acceptance`)} /></div>
+    <header className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#075e54] px-4 py-4 text-white"><div className="flex items-center gap-3"><Avatar className="size-11 border border-[#34d399]/50"><AvatarImage src={logoUrl} alt="مؤسسة الوليد بن طلال الإنسانية" /><AvatarFallback>م</AvatarFallback></Avatar><div><h1 className="text-base font-extrabold">مؤسسة الوليد بن طلال الإنسانية</h1><p className="mt-0.5 text-[11px] text-emerald-100">خدمة العملاء</p></div></div><span className="flex size-9 items-center justify-center rounded-xl bg-white/10 text-emerald-100"><MessageCircleMore className="size-5" /></span></header>
+    <div className="flex shrink-0 items-center gap-2 border-b border-emerald-900/50 bg-[#0b302b] px-4 py-3 text-xs font-bold text-emerald-100"><ShieldCheck className="size-4 text-[#5eead4]" />خدمة العملاء · قنوات التواصل والمتابعة</div>
+    <div className="min-h-0 flex-1 overflow-y-auto bg-[#06241f]"><ChannelRow icon={<img src={logoUrl} alt="" className="h-full w-full object-cover" />} iconTone="overflow-hidden bg-[#075e54]" title="مراسلة المؤسسة" preview={institutionLast?.content || "مرحباً بك، كيف يمكننا مساعدتك؟"} meta={formatTime(institutionLast?.createdAt) || "الآن"} unread={conversation?.status === "open"} onClick={() => setLocation(`/client/${publicId}/chat`)} /><ChannelRow icon={<BadgeDollarSign className="size-6" />} iconTone="bg-[#0f4a40] text-[#a7f3d0]" title="نظام الإدارة المالية" preview={financeLast?.content || "استفسارات الدعم المالي والعمليات ذات الصلة"} meta={formatTime(financeLast?.createdAt) || "متاح"} onClick={() => setLocation(`/client/${publicId}/chat?mode=finance`)} /><ChannelRow icon={<ClipboardCheck className="size-6" />} iconTone="bg-[#16443c] text-[#bbf7d0]" title="فريق دعم متابعة طلبك" preview={followUpLast?.content || (request ? `${request.requestNumber} · ${request.title}` : "ستظهر حالة طلبك وتحديثاته هنا")} meta={formatTime(followUpLast?.createdAt) || "متابعة"} onClick={() => setLocation(`/client/${publicId}/chat?mode=acceptance`)} /></div>
     <ClientBottomNav publicId={publicId} active="support" />
   </section></main>;
 }

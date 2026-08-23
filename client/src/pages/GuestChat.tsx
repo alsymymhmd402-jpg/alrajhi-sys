@@ -24,10 +24,12 @@ export default function GuestChat() {
   const [, setLocation] = useLocation();
   const publicId = clientParams?.publicId ?? legacyParams?.publicId ?? "";
   const accessToken = useMemo(() => (publicId ? getClientSession(publicId) : null), [publicId]);
+  const mode = new URLSearchParams(window.location.search).get("mode");
+  const channel = mode === "finance" ? "finance" : mode === "acceptance" ? "follow_up" : "institution";
   const utils = trpc.useUtils();
   const knownMessageIdsRef = useRef<Set<number> | null>(null);
   const conversationQuery = trpc.support.guestConversation.useQuery(
-    { publicId, accessToken: accessToken ?? "" },
+    { publicId, accessToken: accessToken ?? "", channel },
     { enabled: Boolean(publicId && accessToken), refetchInterval: 2500 },
   );
   const sendMutation = trpc.support.guestSend.useMutation({
@@ -82,22 +84,21 @@ export default function GuestChat() {
   }
 
   const { conversation, messages, attachments } = conversationQuery.data;
-  const mode = new URLSearchParams(window.location.search).get("mode");
-  const assistantMode = mode === "assistant";
+  const financeMode = mode === "finance";
   const acceptanceMode = mode === "acceptance";
   return <>
     <InstitutionChat
       messages={messages}
       attachments={attachments}
       guestName={conversation.guestName}
-      title={assistantMode ? "المساعد الآلي للمؤسسة" : acceptanceMode ? "متابعة الطلب والقبول" : "مراسلة المؤسسة"}
-      subtitle={assistantMode ? "اسأل عن خدمات المؤسسة والطلبات العامة" : acceptanceMode ? "استفسر عن مراحل طلبك وتحديثاته" : "فريق خدمة العملاء متاح لمساعدتك"}
+      title={financeMode ? "نظام الإدارة المالية" : acceptanceMode ? "فريق دعم متابعة طلبك" : "مراسلة المؤسسة"}
+      subtitle={financeMode ? "استفسارات الدعم المالي والعمليات ذات الصلة" : acceptanceMode ? "استفسر عن مراحل طلبك وتحديثاته" : "فريق خدمة العملاء متاح لمساعدتك"}
       onBack={() => setLocation(`/client/${publicId}/messages`)}
       disabled={conversation.status === "closed"}
       isSending={sendMutation.isPending || attachmentMutation.isPending}
-      onSend={content => sendMutation.mutate({ publicId, accessToken, content })}
-      onSendAttachment={async file => {
-        try { const base64 = await fileToBase64(file); attachmentMutation.mutate({ publicId, accessToken, fileName: file.name, mimeType: file.type || "application/octet-stream", base64 }); }
+      onSend={content => sendMutation.mutate({ publicId, accessToken, channel, content })}
+      onSendAttachment={async (file, caption) => {
+        try { const base64 = await fileToBase64(file); attachmentMutation.mutate({ publicId, accessToken, channel, fileName: file.name, mimeType: file.type || "application/octet-stream", base64, caption }); }
         catch (error) { toast.error(error instanceof Error ? error.message : "تعذّر تجهيز الملف."); }
       }}
       callControl={<GuestCallControl publicId={publicId} accessToken={accessToken} disabled={conversation.status === "closed"} compact />}

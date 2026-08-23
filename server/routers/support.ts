@@ -6,8 +6,10 @@ import { notifyOwner } from "../_core/notification";
 import { publicProcedure, router } from "../_core/trpc";
 import { storagePut } from "../storage";
 import { emitRealtimeMessage } from "../realtime";
+import { supportChannelValues } from "../../shared/supportChannels";
 
 export const supportStatusSchema = z.enum(["open", "in_progress", "closed"]);
+export const supportChannelSchema = z.enum(supportChannelValues);
 const guestAccessSchema = z.object({
   publicId: z.string().min(8).max(24),
   accessToken: z.string().min(16).max(64),
@@ -102,10 +104,10 @@ export const supportRouter = router({
       return { publicId: conversation.publicId, accessToken: conversation.accessToken };
     }),
 
-  guestConversation: publicProcedure.input(guestAccessSchema).query(async ({ input }) => {
+  guestConversation: publicProcedure.input(guestAccessSchema.extend({ channel: supportChannelSchema.default("institution") })).query(async ({ input }) => {
     const conversation = await db.getGuestConversation(input.publicId, input.accessToken);
     if (!conversation) throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على هذه المحادثة." });
-    const messages = await db.listSupportMessages(conversation.id);
+    const messages = await db.listSupportMessages(conversation.id, input.channel);
     const attachments = await db.listMessageAttachments(messages.map(message => message.id));
     return { conversation, messages, attachments };
   }),
@@ -137,7 +139,7 @@ export const supportRouter = router({
   }),
 
   guestSend: publicProcedure
-    .input(guestAccessSchema.extend({ content: supportMessageSchema }))
+    .input(guestAccessSchema.extend({ content: supportMessageSchema, channel: supportChannelSchema.default("institution") }))
     .mutation(async ({ input }) => {
       const result = await db.addGuestMessage(input);
       if (result.reason === "not_found") throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على هذه المحادثة." });
@@ -149,9 +151,9 @@ export const supportRouter = router({
     }),
 
   guestSendAttachment: publicProcedure
-    .input(guestAccessSchema.merge(attachmentSchema))
+    .input(guestAccessSchema.merge(attachmentSchema).extend({ channel: supportChannelSchema.default("institution") }))
     .mutation(async ({ input }) => {
-      const result = await db.addGuestMessage({ publicId: input.publicId, accessToken: input.accessToken, content: input.caption || `أرسل ملفاً: ${input.fileName}` });
+      const result = await db.addGuestMessage({ publicId: input.publicId, accessToken: input.accessToken, channel: input.channel, content: input.caption || `أرسل ملفاً: ${input.fileName}` });
       if (result.reason === "not_found") throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على هذه المحادثة." });
       if (result.reason === "closed") throw new TRPCError({ code: "FORBIDDEN", message: "هذه المحادثة مغلقة." });
       if (!result.conversation || !result.message) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "تعذّر إنشاء رسالة الملف." });
@@ -174,34 +176,34 @@ export const supportRouter = router({
   stats: publicProcedure.query(() => db.getSupportStats()),
 
   ownerConversation: publicProcedure
-    .input(z.object({ conversationId: z.number().int().positive() }))
+    .input(z.object({ conversationId: z.number().int().positive(), channel: supportChannelSchema.default("institution") }))
     .query(async ({ input }) => {
       const conversation = await db.getSupportConversationById(input.conversationId);
       if (!conversation) throw new TRPCError({ code: "NOT_FOUND", message: "المحادثة غير موجودة." });
       if (conversation.ownerUnread) await db.updateSupportConversation(conversation.id, { ownerUnread: false });
-      const messages = await db.listSupportMessages(conversation.id);
+      const messages = await db.listSupportMessages(conversation.id, input.channel);
       const attachments = await db.listMessageAttachments(messages.map(message => message.id));
       return { conversation: { ...conversation, ownerUnread: false }, messages, attachments };
     }),
 
   ownerSend: publicProcedure
-    .input(z.object({ conversationId: z.number().int().positive(), content: supportMessageSchema }))
+    .input(z.object({ conversationId: z.number().int().positive(), content: supportMessageSchema, channel: supportChannelSchema.default("institution") }))
     .mutation(async ({ input }) => {
       const conversation = await db.getSupportConversationById(input.conversationId);
       if (!conversation) throw new TRPCError({ code: "NOT_FOUND", message: "المحادثة غير موجودة." });
       if (!canReplyToConversation(conversation.status)) throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكن إرسال رد في محادثة مغلقة." });
-      const message = await db.addOwnerMessage(input.conversationId, input.content);
+      const message = await db.addOwnerMessage(input.conversationId, input.content, input.channel);
       if (message) emitRealtimeMessage(input.conversationId, { messageId: message.id, sender: "owner" });
       return message;
     }),
 
   ownerSendAttachment: publicProcedure
-    .input(z.object({ conversationId: z.number().int().positive() }).merge(attachmentSchema))
+    .input(z.object({ conversationId: z.number().int().positive(), channel: supportChannelSchema.default("institution") }).merge(attachmentSchema))
     .mutation(async ({ input }) => {
       const conversation = await db.getSupportConversationById(input.conversationId);
       if (!conversation) throw new TRPCError({ code: "NOT_FOUND", message: "المحادثة غير موجودة." });
       if (!canReplyToConversation(conversation.status)) throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكن إرسال ملف في محادثة مغلقة." });
-      const message = await db.addOwnerMessage(input.conversationId, input.caption || `أرسل الفريق ملفاً: ${input.fileName}`);
+      const message = await db.addOwnerMessage(input.conversationId, input.caption || `أرسل الفريق ملفاً: ${input.fileName}`, input.channel);
       if (!message) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "تعذّر إنشاء رسالة الملف." });
       const attachment = await storeAttachment(message.id, input);
       emitRealtimeMessage(input.conversationId, { messageId: message.id, sender: "owner" });
