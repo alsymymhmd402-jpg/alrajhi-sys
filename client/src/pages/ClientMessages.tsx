@@ -4,8 +4,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getClientSession } from "@/lib/clientSession";
 import { trpc } from "@/lib/trpc";
 import { BadgeDollarSign, ChevronLeft, ClipboardCheck, Loader2, MessageCircleMore, ShieldCheck } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useLocation, useRoute } from "wouter";
+import { toast } from "sonner";
 
 const logoUrl = "/manus-storage/alwaleed-philanthropies-mark_d87d264e.jpg";
 const formatTime = (value?: Date | string) => value ? new Intl.DateTimeFormat("ar-EG", { hour: "numeric", minute: "2-digit" }).format(new Date(value)) : "";
@@ -20,6 +21,24 @@ export default function ClientMessages() {
   const [, setLocation] = useLocation();
   const publicId = params?.publicId ?? "";
   const accessToken = useMemo(() => publicId ? getClientSession(publicId) : null, [publicId]);
+  const exitAttemptRef = useRef(0);
+  useEffect(() => {
+    const pushGuard = () => window.history.pushState({ voiceCircleScreen: "messages" }, "", window.location.href);
+    pushGuard();
+    const onBack = () => {
+      const now = Date.now();
+      if (now - exitAttemptRef.current < 1800) {
+        window.removeEventListener("popstate", onBack);
+        window.history.back();
+        return;
+      }
+      exitAttemptRef.current = now;
+      toast.message("اضغط رجوع مرة أخرى للخروج من التطبيق");
+      pushGuard();
+    };
+    window.addEventListener("popstate", onBack);
+    return () => window.removeEventListener("popstate", onBack);
+  }, []);
   const institutionQuery = trpc.support.guestConversation.useQuery({ publicId, accessToken: accessToken ?? "", channel: "institution" }, { enabled: Boolean(publicId && accessToken), refetchInterval: 3000 });
   const financeQuery = trpc.support.guestConversation.useQuery({ publicId, accessToken: accessToken ?? "", channel: "finance" }, { enabled: Boolean(publicId && accessToken), refetchInterval: 3000 });
   const followUpQuery = trpc.support.guestConversation.useQuery({ publicId, accessToken: accessToken ?? "", channel: "follow_up" }, { enabled: Boolean(publicId && accessToken), refetchInterval: 3000 });

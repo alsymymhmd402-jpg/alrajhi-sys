@@ -38,7 +38,7 @@ export function appendStatusMediaChunk(input: { uploadId: string; index: number;
   return { received: input.index + 1, total: session.totalChunks };
 }
 
-export async function finishStatusMediaUpload(uploadId: string) {
+export async function finishStatusMediaUpload(uploadId: string, storagePrefix = "institution-statuses") {
   const session = sessions.get(uploadId);
   if (!session) throw new Error("انتهت جلسة الرفع، أعد اختيار الملف.");
   try {
@@ -47,7 +47,7 @@ export async function finishStatusMediaUpload(uploadId: string) {
     const buffer = Buffer.from(encoded, "base64url");
     if (buffer.byteLength !== session.expectedBytes) throw new Error("تعذر التحقق من حجم الوسيط.");
     const extension = session.fileName.split(".").pop()?.slice(0, 8) || (session.mimeType === "video/mp4" ? "mp4" : session.mimeType === "video/webm" ? "webm" : "jpg");
-    return storagePut(`institution-statuses/${Date.now()}-${nanoid(10)}.${extension}`, buffer, session.mimeType);
+    return storagePut(`${storagePrefix}/${Date.now()}-${nanoid(10)}.${extension}`, buffer, session.mimeType);
   } finally {
     sessions.delete(uploadId);
   }

@@ -28,6 +28,7 @@ export default function GuestChat() {
   const channel = mode === "finance" ? "finance" : mode === "acceptance" ? "follow_up" : "institution";
   const utils = trpc.useUtils();
   const knownMessageIdsRef = useRef<Set<number> | null>(null);
+  const returnToMessages = () => setLocation(`/client/${publicId}/messages`);
   const conversationQuery = trpc.support.guestConversation.useQuery(
     { publicId, accessToken: accessToken ?? "", channel },
     { enabled: Boolean(publicId && accessToken), refetchInterval: 2500 },
@@ -93,7 +94,7 @@ export default function GuestChat() {
       guestName={conversation.guestName}
       title={financeMode ? "نظام الإدارة المالية" : acceptanceMode ? "فريق دعم متابعة طلبك" : "مراسلة المؤسسة"}
       subtitle={financeMode ? "استفسارات الدعم المالي والعمليات ذات الصلة" : acceptanceMode ? "استفسر عن مراحل طلبك وتحديثاته" : "فريق خدمة العملاء متاح لمساعدتك"}
-      onBack={() => setLocation(`/client/${publicId}/messages`)}
+      onBack={returnToMessages}
       disabled={conversation.status === "closed"}
       isSending={sendMutation.isPending || attachmentMutation.isPending}
       onSend={content => sendMutation.mutate({ publicId, accessToken, channel, content })}

@@ -7,6 +7,7 @@ import { publicProcedure, router } from "../_core/trpc";
 import { storagePut } from "../storage";
 import { emitRealtimeMessage } from "../realtime";
 import { supportChannelValues } from "../../shared/supportChannels";
+import { appendStatusMediaChunk, beginStatusMediaUpload, finishStatusMediaUpload } from "../statusMediaUpload";
 
 export const supportStatusSchema = z.enum(["open", "in_progress", "closed"]);
 export const supportChannelSchema = z.enum(supportChannelValues);
@@ -27,6 +28,9 @@ export const guestContactUpdateSchema = z.object({
   email: z.union([z.string().trim().email("يرجى كتابة بريد إلكتروني صحيح.").max(320), z.literal("")]).optional(),
   phone: z.string().trim().max(40).optional(),
   extraData: z.string().trim().max(2000).optional(),
+  avatarFileName: z.string().trim().max(260).optional(),
+  avatarMimeType: z.string().trim().max(140).optional(),
+  avatarBase64: z.string().max(3_000_000).optional(),
 });
 const attachmentSchema = z.object({
   fileName: z.string().trim().min(1).max(260),
@@ -127,9 +131,30 @@ export const supportRouter = router({
       extraData: input.extraData?.trim() || null,
     });
     if (!profile) throw new TRPCError({ code: "NOT_FOUND", message: "تعذّر تحديث ملف العميل." });
+    if (profile.conversation.contactId) await storeGuestAvatar(profile.conversation.contactId, input);
     const notice = getGuestProfileUpdateNotice(profile.conversation.guestName);
     await ownerNotice(notice.title, notice.content);
-    return profile;
+    return (await db.getGuestProfile(input.publicId, input.accessToken)) ?? profile;
+  }),
+
+  guestAvatarBeginUpload: publicProcedure.input(guestAccessSchema.extend({ fileName: z.string().trim().min(1).max(260), mimeType: z.string().trim().startsWith("image/"), size: z.number().int().min(1).max(2 * 1024 * 1024), totalChunks: z.number().int().min(1).max(200) })).mutation(async ({ input }) => {
+    const conversation = await db.getGuestConversation(input.publicId, input.accessToken);
+    if (!conversation?.contactId) throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على ملف العميل." });
+    return beginStatusMediaUpload(input);
+  }),
+
+  guestAvatarAppendChunk: publicProcedure.input(guestAccessSchema.extend({ uploadId: z.string().min(8).max(40), index: z.number().int().min(0), data: z.string().min(1).max(30_000).regex(/^[A-Za-z0-9_-]+$/) })).mutation(async ({ input }) => {
+    const conversation = await db.getGuestConversation(input.publicId, input.accessToken);
+    if (!conversation?.contactId) throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على ملف العميل." });
+    return appendStatusMediaChunk(input);
+  }),
+
+  guestAvatarFinishUpload: publicProcedure.input(guestAccessSchema.extend({ uploadId: z.string().min(8).max(40) })).mutation(async ({ input }) => {
+    const conversation = await db.getGuestConversation(input.publicId, input.accessToken);
+    if (!conversation?.contactId) throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على ملف العميل." });
+    const stored = await finishStatusMediaUpload(input.uploadId, "customer-avatars");
+    await db.updateContact(conversation.contactId, { avatarUrl: stored.url });
+    return { url: stored.url };
   }),
 
   guestApplications: publicProcedure.input(guestAccessSchema).query(async ({ input }) => {
