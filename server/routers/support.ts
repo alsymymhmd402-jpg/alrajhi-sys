@@ -8,6 +8,7 @@ import { storagePut } from "../storage";
 import { emitRealtimeMessage } from "../realtime";
 import { supportChannelValues } from "../../shared/supportChannels";
 import { appendStatusMediaChunk, beginStatusMediaUpload, finishStatusMediaUpload } from "../statusMediaUpload";
+import { generateCustomerAutoReply } from "../customerResponder";
 
 export const supportStatusSchema = z.enum(["open", "in_progress", "closed"]);
 export const supportChannelSchema = z.enum(supportChannelValues);
@@ -172,6 +173,8 @@ export const supportRouter = router({
       if (!result.conversation || !result.message) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "تعذّر إرسال الرسالة." });
       emitRealtimeMessage(result.conversation.id, { messageId: result.message.id, sender: "guest" });
       await ownerNotice("رسالة دعم جديدة", `${result.conversation.guestName}: ${result.message.content.slice(0, 180)}`);
+      const automaticReply = await generateCustomerAutoReply({ conversationId: result.conversation.id, guestName: result.conversation.guestName, channel: input.channel, content: result.message.content });
+      if (automaticReply) emitRealtimeMessage(result.conversation.id, { messageId: automaticReply.id, sender: "owner" });
       return result.message;
     }),
 

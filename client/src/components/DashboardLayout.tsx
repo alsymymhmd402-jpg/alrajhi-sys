@@ -27,6 +27,7 @@ const menuItems = [
   { icon: CirclePlay, label: "حالات المؤسسة", path: "/dashboard/statuses" },
   { icon: Paintbrush, label: "محرر واجهة العميل", path: "/dashboard/customer-ui" },
   { icon: Sparkles, label: "وكيل التطبيق", path: "/dashboard/app-agent" },
+  { icon: Bot, label: "إعدادات الذكاء الاصطناعي", path: "/dashboard/ai-settings" },
   { icon: Bot, label: "Voice AI", path: "/dashboard/voice-ai" },
   { icon: Waves, label: "النماذج الصوتية", path: "/dashboard/voice-models" },
   { icon: Settings2, label: "الإعدادات", path: "/dashboard/settings" },

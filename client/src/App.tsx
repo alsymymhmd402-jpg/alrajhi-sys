@@ -17,6 +17,7 @@ import ClientDemoChat from "./pages/ClientDemoChat";
 import GuestChat from "./pages/GuestChat";
 import InviteGuest from "./pages/InviteGuest";
 import MissedCallPreview from "./pages/MissedCallPreview";
+import AiSettings from "./pages/AiSettings";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -45,6 +46,7 @@ function Router() {
       <Route path={"/dashboard/calls"} component={Dashboard} />
       <Route path={"/dashboard/statuses"} component={Dashboard} />
       <Route path={"/dashboard/app-agent"} component={Dashboard} />
+      <Route path={"/dashboard/ai-settings"} component={Dashboard} />
       <Route path={"/dashboard/voice-ai"} component={Dashboard} />
       <Route path={"/dashboard/voice-models"} component={Dashboard} />
       <Route path={"/dashboard/settings"} component={Dashboard} />

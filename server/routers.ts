@@ -10,6 +10,7 @@ import { invitationsRouter } from "./routers/invitations";
 import { institutionStatusesRouter } from "./routers/institutionStatuses";
 import { guestPortalRouter } from "./routers/guestPortal";
 import { operationsRouter } from "./routers/operations";
+import { aiResponderRouter } from "./routers/aiResponder";
 import { requestsRouter } from "./routers/requests";
 import { supportRouter } from "./routers/support";
 import { voiceRouter } from "./routers/voice";
@@ -37,6 +38,7 @@ export const appRouter = router({
   customerUi: customerUiRouter,
   requests: requestsRouter,
   operations: operationsRouter,
+  aiResponder: aiResponderRouter,
   voice: voiceRouter,
 });
 
