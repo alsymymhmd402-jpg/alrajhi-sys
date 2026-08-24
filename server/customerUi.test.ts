@@ -55,6 +55,22 @@ describe("محرر واجهة العميل", () => {
     expect(mocks.getPublishedCustomerUiDocument).toHaveBeenCalledWith(8);
   });
 
+  it("يربط بطاقة بيانات العميل وحالة القبول بملف صاحب الجلسة فقط", async () => {
+    mocks.getGuestConversation.mockResolvedValue({ contactId: 12 });
+    mocks.getPublishedCustomerUiDocument.mockResolvedValue({ id: 13, version: 4, document: JSON.stringify(defaultCustomerUiDocument) });
+    mocks.getContactDetails.mockResolvedValue({
+      contact: { id: 12, displayName: "عميل الواجهة", phone: "+966500000000", email: "client@example.test", avatarUrl: "/manus-storage/avatar.png" },
+      requests: [{ requestNumber: "REQ-12", title: "طلب العميل", status: "in_progress" }],
+    });
+    const caller = appRouter.createCaller(anonymousContext);
+
+    const result = await caller.customerUi.guestPublished({ publicId: "customer-ui-123", accessToken: "a".repeat(32) });
+
+    expect(result?.profile).toMatchObject({ displayName: "عميل الواجهة", phone: "+966500000000" });
+    expect(result?.request).toEqual({ requestNumber: "REQ-12", title: "طلب العميل", status: "in_progress" });
+    expect(mocks.getContactDetails).toHaveBeenLastCalledWith(12);
+  });
+
   it("يرفض فتح واجهة منشورة من دون جلسة عميل صحيحة", async () => {
     mocks.getGuestConversation.mockResolvedValue(undefined);
     const caller = appRouter.createCaller(anonymousContext);
@@ -89,5 +105,17 @@ describe("محرر واجهة العميل", () => {
 
     expect(document.canvas.contentHeight).toBe(260);
     expect(document.components[0]?.style).toMatchObject({ objectPositionX: 72, objectPositionY: 24, imageScale: 1.4, filterPreset: "warm" });
+  });
+
+  it("يقبل عناصر بيانات العميل وحالة القبول الديناميكية داخل تصميمه", () => {
+    const document = customerUiDocumentSchema.parse({
+      ...defaultCustomerUiDocument,
+      components: [
+        { ...defaultCustomerUiDocument.components[0], id: "profile-card-001", type: "profile", label: "بياناتي", profileFields: ["name", "email"], action: { type: "profile" } },
+        { ...defaultCustomerUiDocument.components[1], id: "application-card-001", type: "application", label: "حالة القبول", action: { type: "application" } },
+      ],
+    });
+    expect(document.components.map(item => item.type)).toEqual(["profile", "application"]);
+    expect(document.components[0]?.profileFields).toEqual(["name", "email"]);
   });
 });

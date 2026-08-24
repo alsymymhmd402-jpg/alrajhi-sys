@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const customerUiComponentTypes = ["image", "title", "text", "button", "icon", "card", "status", "divider", "container", "badge", "list", "link", "notification", "spacer"] as const;
+export const customerUiComponentTypes = ["image", "title", "text", "button", "icon", "card", "status", "divider", "container", "badge", "list", "link", "notification", "spacer", "profile", "application"] as const;
 export type CustomerUiComponentType = (typeof customerUiComponentTypes)[number];
 
 export const customerUiComponentSchema = z.object({
@@ -36,6 +36,7 @@ export const customerUiComponentSchema = z.object({
     shadow: z.boolean().optional(),
   }).default({}),
   action: z.object({ type: z.enum(["none", "chat", "institution", "application", "profile", "url"]).default("none"), value: z.string().max(500).optional() }).default({ type: "none" }),
+  profileFields: z.array(z.enum(["name", "phone", "email"])).min(1).max(3).optional(),
   statusSteps: z.array(z.object({ id: z.string().min(1).max(80), label: z.string().trim().min(1).max(100), color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#128c7e") })).max(8).optional(),
   statusCurrent: z.number().int().min(0).max(7).optional(),
 });

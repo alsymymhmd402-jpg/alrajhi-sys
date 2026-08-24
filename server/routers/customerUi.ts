@@ -26,10 +26,13 @@ export const customerUiRouter = router({
     return { url: upload.url };
   }),
   editor: publicProcedure.input(contactIdSchema).query(async ({ input }) => {
-    const contact = await contactForConfig(input.contactId);
+    const details = await db.getContactDetails(input.contactId);
+    if (!details) throw new Error("العميل غير موجود.");
+    const contact = details.contact;
     const config = await db.ensureCustomerUiConfig({ contactId: contact.id, name: `واجهة ${contact.displayName}`, document: JSON.stringify(defaultCustomerUiDocument) });
     const [revisions, templates, activity] = await Promise.all([db.listCustomerUiRevisions(contact.id), db.listCustomerUiTemplates(), db.listCustomerUiAuditLogs(contact.id)]);
-    return { contact, config, revisions, templates, activity };
+    const request = details.requests[0] ? { requestNumber: details.requests[0].requestNumber, title: details.requests[0].title, status: details.requests[0].status } : null;
+    return { contact, request, config, revisions, templates, activity };
   }),
   saveDraft: publicProcedure.input(contactIdSchema.merge(documentInput)).mutation(async ({ input }) => {
     const contact = await contactForConfig(input.contactId);
@@ -59,8 +62,23 @@ export const customerUiRouter = router({
   guestPublished: publicProcedure.input(guestSchema).query(async ({ input }) => {
     const conversation = await db.getGuestConversation(input.publicId, input.accessToken);
     if (!conversation?.contactId) throw new Error("لم يتم العثور على جلسة العميل.");
-    const revision = await db.getPublishedCustomerUiDocument(conversation.contactId);
-    return revision ? { revision, document: customerUiDocumentSchema.parse(JSON.parse(revision.document)) } : null;
+    const [revision, details] = await Promise.all([
+      db.getPublishedCustomerUiDocument(conversation.contactId),
+      db.getContactDetails(conversation.contactId),
+    ]);
+    if (!revision) return null;
+    const profile = details?.contact ? {
+      displayName: details.contact.displayName,
+      phone: details.contact.phone,
+      email: details.contact.email,
+      avatarUrl: details.contact.avatarUrl,
+    } : null;
+    const request = details?.requests?.[0] ? {
+      requestNumber: details.requests[0].requestNumber,
+      title: details.requests[0].title,
+      status: details.requests[0].status,
+    } : null;
+    return { revision, document: customerUiDocumentSchema.parse(JSON.parse(revision.document)), profile, request };
   }),
   guestNotifications: publicProcedure.input(guestSchema).query(async ({ input }) => {
     const conversation = await db.getGuestConversation(input.publicId, input.accessToken);
