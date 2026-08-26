@@ -190,7 +190,7 @@ export default function ClientMessages() {
             }
             meta={formatTime(institutionLast?.createdAt) || "الآن"}
             unread={conversation?.status === "open"}
-            onClick={() => setLocation(`/client/${publicId}/chat`)}
+            onClick={() => setLocation(`/client/${publicId}/institution`)}
           />
           <ChannelRow
             icon={<BadgeDollarSign className="size-6" />}

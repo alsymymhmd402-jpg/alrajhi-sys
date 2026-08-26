@@ -7,6 +7,7 @@ import {
 import ClientSessionUnavailable from "@/pages/ClientSessionUnavailable";
 import { Button } from "@/components/ui/button";
 import { getClientSession } from "@/lib/clientSession";
+import { brandAssets } from "@/lib/brandAssets";
 import {
   hasInstitutionPreload,
   institutionUrl,
@@ -22,7 +23,8 @@ import {
 import { useMemo, useState } from "react";
 import { useRoute } from "wouter";
 
-const logoUrl = "/manus-storage/alwaleed-philanthropies-mark_d87d264e.jpg";
+const logoUrl = brandAssets.institutionSeal;
+const institutionName = "خدمة عملاء مؤسسة الوليد بن طلال الإنسانية";
 export default function ClientInstitution() {
   const [, params] = useRoute("/client/:publicId/institution");
   const publicId = params?.publicId ?? "";
@@ -46,10 +48,8 @@ export default function ClientInstitution() {
               className="size-10 rounded-xl object-cover"
             />
             <div>
-              <h1 className="text-sm font-bold">عن المؤسسة</h1>
-              <p className="mt-0.5 text-[11px] text-emerald-100">
-                مؤسسة الوليد بن طلال الإنسانية
-              </p>
+              <h1 className="text-sm font-bold">ملف المؤسسة</h1>
+              <p className="mt-0.5 text-[11px] text-emerald-100">{institutionName}</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -74,6 +74,14 @@ export default function ClientInstitution() {
             )}
           </div>
         </header>
+        <div className="relative overflow-hidden border-b border-[#1c2e27] bg-[#0c1311]">
+          <img src={brandAssets.channelCovers.institution} alt="" aria-hidden="true" className="h-28 w-full object-cover opacity-75" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#07110e] via-[#07110e]/55 to-transparent" />
+          <div className="absolute inset-x-4 bottom-3 flex items-end gap-3">
+            <img src={logoUrl} alt={institutionName} className="size-16 rounded-2xl border-2 border-white/70 bg-white object-cover shadow-xl" />
+            <div className="min-w-0 text-white"><h2 className="truncate text-base font-black">{institutionName}</h2><p className="mt-1 text-xs text-emerald-100/80">ملف رسمي للتواصل ومتابعة الطلبات</p></div>
+          </div>
+        </div>
         <div className="grid grid-cols-2 border-b border-[#1c2e27] bg-[#0c1311] p-2">
           <button
             type="button"
@@ -107,7 +115,8 @@ export default function ClientInstitution() {
             />
             <section className="rounded-3xl bg-gradient-to-br from-[#075e54] to-[#128c7e] p-5 text-white">
               <HeartHandshake className="size-8 text-emerald-100" />
-              <h2 className="mt-5 text-xl font-extrabold leading-8">
+              <button type="button" onClick={() => window.location.assign(`/client/${publicId}/chat`)} className="mb-5 w-full rounded-2xl bg-[#128c7e] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-950/30">فتح محادثة خدمة العملاء</button>
+            <h2 className="mt-5 text-xl font-extrabold leading-8">
                 شركاء في سعي الإنسانية لأجل عالم متكافئ الفرص
               </h2>
               <p className="mt-3 text-sm leading-7 text-emerald-50">
@@ -115,7 +124,7 @@ export default function ClientInstitution() {
                 داخل التطبيق، أو انتقل إلى تبويب موقع المؤسسة للتصفح الكامل.
               </p>
             </section>
-            <section className="mt-5 rounded-2xl border border-[#1e3029] bg-[#101916] p-4">
+            <section className="mt-5 rounded-2xl border border-[#1e3029] bg-[#101916] p-4"><h3 className="font-bold text-emerald-50">معلومات التواصل</h3><div className="mt-3 space-y-2 text-sm leading-6 text-emerald-100/75"><p dir="ltr" className="text-right">+966-11-211-0000</p><p dir="ltr" className="break-all text-right">General@Alwaleedphilanthropies.Org</p><p>الموقع الرسمي: alwaleedphilanthropies.org</p></div></section><section className="mt-5 rounded-2xl border border-[#1e3029] bg-[#101916] p-4">
               <div className="flex items-start gap-3">
                 <Sparkles className="mt-0.5 size-5 text-[#29b78d]" />
                 <div>
