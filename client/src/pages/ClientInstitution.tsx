@@ -40,41 +40,11 @@ export default function ClientInstitution() {
   return (
     <main className="h-[100dvh] overflow-hidden bg-[#050807] p-0" dir="rtl">
       <section className="flex h-[100dvh] w-full flex-col overflow-hidden bg-[#080d0c] shadow-2xl">
-        <header className="flex items-center justify-between bg-[#075e54] px-4 py-3 text-white">
-          <div className="flex items-center gap-3">
-            <img
-              src={logoUrl}
-              alt="مؤسسة الوليد بن طلال الإنسانية"
-              className="size-10 rounded-xl object-cover"
-            />
-            <div>
-              <h1 className="text-sm font-bold">ملف المؤسسة</h1>
-              <p className="mt-0.5 text-[11px] text-emerald-100">{institutionName}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <ClientUpdateNotifications
-              publicId={publicId}
-              accessToken={accessToken}
-            />
-            {view === "website" && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  setLoading(true);
-                  setFrameKey(key => key + 1);
-                }}
-                className="size-9 text-white hover:bg-white/15 hover:text-white"
-                aria-label="تحديث موقع المؤسسة"
-              >
-                <RefreshCw className="size-4" />
-              </Button>
-            )}
-          </div>
-        </header>
         <div className="relative overflow-hidden border-b border-[#1c2e27] bg-[#0c1311]">
+          <div className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-[#07110e]/70 p-1 backdrop-blur">
+            <ClientUpdateNotifications publicId={publicId} accessToken={accessToken} />
+            {view === "website" && <Button type="button" variant="ghost" size="icon" onClick={() => { setLoading(true); setFrameKey(key => key + 1); }} className="size-8 text-white hover:bg-white/15 hover:text-white" aria-label="تحديث موقع المؤسسة"><RefreshCw className="size-4" /></Button>}
+          </div>
           <img src={brandAssets.channelCovers.institution} alt="" aria-hidden="true" className="h-28 w-full object-cover opacity-75" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#07110e] via-[#07110e]/55 to-transparent" />
           <div className="absolute inset-x-4 bottom-3 flex items-end gap-3">
@@ -82,7 +52,7 @@ export default function ClientInstitution() {
             <div className="min-w-0 text-white"><h2 className="truncate text-base font-black">{institutionName}</h2><p className="mt-1 text-xs text-emerald-100/80">ملف رسمي للتواصل ومتابعة الطلبات</p></div>
           </div>
         </div>
-        <div className="grid grid-cols-2 border-b border-[#1c2e27] bg-[#0c1311] p-2">
+        <div className="sticky top-0 z-20 grid grid-cols-2 border-b border-[#1c2e27] bg-[#0c1311] p-2">
           <button
             type="button"
             onClick={() => setView("overview")}
