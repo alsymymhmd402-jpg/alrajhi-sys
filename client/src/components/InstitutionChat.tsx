@@ -43,6 +43,7 @@ type InstitutionChatProps = {
   title?: string;
   subtitle?: string;
   onBack?: () => void;
+  onProfileClick?: () => void;
   disabled?: boolean;
   isSending?: boolean;
   onSend: (content: string) => void;
@@ -65,6 +66,7 @@ export function InstitutionChat({
   title = "مراسلة المؤسسة",
   subtitle = "فريق خدمة العملاء متاح لمساعدتك",
   onBack,
+  onProfileClick,
   disabled = false,
   isSending = false,
   onSend,
@@ -207,7 +209,7 @@ export function InstitutionChat({
       dir="rtl"
     >
       <section className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-[#080d0c] shadow-2xl">
-        <header className="z-20 flex shrink-0 items-center justify-between border-b border-white/10 bg-[#0b5e53] px-4 py-3 text-white shadow-lg">
+        <header className="z-20 flex shrink-0 items-center justify-between border-b border-white/10 bg-[#0b5e53] px-3 py-2 text-white shadow-lg">
           <div className="flex min-w-0 items-center gap-2">
             <Button
               type="button"
@@ -219,16 +221,16 @@ export function InstitutionChat({
             >
               <ArrowRight className="size-[18px]" />
             </Button>
-            <Avatar className="size-10 border border-white/30 shadow-sm">
-              <AvatarImage src={logoUrl} alt="مؤسسة الوليد بن طلال الإنسانية" />
-              <AvatarFallback>م</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <h1 className="truncate text-sm font-extrabold">{title}</h1>
-              <p className="mt-0.5 truncate text-[11px] text-emerald-100">
-                {subtitle}
-              </p>
-            </div>
+            <button type="button" onClick={onProfileClick} className="flex min-w-0 items-center gap-2 text-right" aria-label="فتح ملف المؤسسة">
+              <Avatar className="size-9 border border-white/30 shadow-sm">
+                <AvatarImage src={logoUrl} alt="مؤسسة الوليد بن طلال الإنسانية" />
+                <AvatarFallback>م</AvatarFallback>
+              </Avatar>
+              <span className="min-w-0">
+                <h1 className="truncate text-[13px] font-extrabold">{title}</h1>
+                <p className="mt-0.5 truncate text-[10px] text-emerald-100">{subtitle}</p>
+              </span>
+            </button>
           </div>
           <div className="flex items-center gap-0.5">
             <Button

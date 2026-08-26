@@ -93,9 +93,10 @@ export default function GuestChat() {
       messages={messages}
       attachments={attachments}
       guestName={conversation.guestName}
-      title={financeMode ? "نظام الإدارة المالية" : acceptanceMode ? "فريق دعم متابعة طلبك" : privateOfficeMode ? "المكتب الخاص" : "مراسلة المؤسسة"}
+      title={financeMode ? "نظام الإدارة المالية" : acceptanceMode ? "فريق دعم متابعة طلبك" : privateOfficeMode ? "المكتب الخاص" : "خدمة عملاء مؤسسة الوليد بن طلال"}
       subtitle={financeMode ? "استفسارات الدعم المالي والعمليات ذات الصلة" : acceptanceMode ? "استفسر عن مراحل طلبك وتحديثاته" : privateOfficeMode ? "تواصل مباشر مع المكتب الخاص للمؤسسة" : "فريق خدمة العملاء متاح لمساعدتك"}
       onBack={returnToMessages}
+      onProfileClick={!financeMode && !acceptanceMode && !privateOfficeMode ? () => setLocation(`/client/${publicId}/institution`) : undefined}
       disabled={conversation.status === "closed"}
       isSending={sendMutation.isPending || attachmentMutation.isPending}
       onSend={content => sendMutation.mutate({ publicId, accessToken, channel, content })}
