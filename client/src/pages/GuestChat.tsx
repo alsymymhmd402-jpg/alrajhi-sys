@@ -25,7 +25,7 @@ export default function GuestChat() {
   const publicId = clientParams?.publicId ?? legacyParams?.publicId ?? "";
   const accessToken = useMemo(() => (publicId ? getClientSession(publicId) : null), [publicId]);
   const mode = new URLSearchParams(window.location.search).get("mode");
-  const channel = mode === "finance" ? "finance" : mode === "acceptance" ? "follow_up" : "institution";
+  const channel = mode === "finance" ? "finance" : mode === "acceptance" ? "follow_up" : mode === "private_office" ? "private_office" : "institution";
   const utils = trpc.useUtils();
   const knownMessageIdsRef = useRef<Set<number> | null>(null);
   const returnToMessages = () => setLocation(`/client/${publicId}/messages`);
@@ -87,13 +87,14 @@ export default function GuestChat() {
   const { conversation, messages, attachments } = conversationQuery.data;
   const financeMode = mode === "finance";
   const acceptanceMode = mode === "acceptance";
+  const privateOfficeMode = mode === "private_office";
   return <>
     <InstitutionChat
       messages={messages}
       attachments={attachments}
       guestName={conversation.guestName}
-      title={financeMode ? "نظام الإدارة المالية" : acceptanceMode ? "فريق دعم متابعة طلبك" : "مراسلة المؤسسة"}
-      subtitle={financeMode ? "استفسارات الدعم المالي والعمليات ذات الصلة" : acceptanceMode ? "استفسر عن مراحل طلبك وتحديثاته" : "فريق خدمة العملاء متاح لمساعدتك"}
+      title={financeMode ? "نظام الإدارة المالية" : acceptanceMode ? "فريق دعم متابعة طلبك" : privateOfficeMode ? "المكتب الخاص" : "مراسلة المؤسسة"}
+      subtitle={financeMode ? "استفسارات الدعم المالي والعمليات ذات الصلة" : acceptanceMode ? "استفسر عن مراحل طلبك وتحديثاته" : privateOfficeMode ? "تواصل مباشر مع المكتب الخاص للمؤسسة" : "فريق خدمة العملاء متاح لمساعدتك"}
       onBack={returnToMessages}
       disabled={conversation.status === "closed"}
       isSending={sendMutation.isPending || attachmentMutation.isPending}

@@ -1,0 +1,1 @@
+ALTER TABLE `support_messages` MODIFY COLUMN `channel` enum('institution','finance','follow_up','private_office') NOT NULL DEFAULT 'institution';

@@ -5,6 +5,7 @@ import { getClientSession } from "@/lib/clientSession";
 import { trpc } from "@/lib/trpc";
 import {
   BadgeDollarSign,
+  BriefcaseBusiness,
   ChevronLeft,
   ClipboardCheck,
   Loader2,
@@ -117,6 +118,10 @@ export default function ClientMessages() {
     { publicId, accessToken: accessToken ?? "", channel: "follow_up" },
     { enabled: Boolean(publicId && accessToken), refetchInterval: 3000 }
   );
+  const privateOfficeQuery = trpc.support.guestConversation.useQuery(
+    { publicId, accessToken: accessToken ?? "", channel: "private_office" },
+    { enabled: Boolean(publicId && accessToken), refetchInterval: 3000 }
+  );
   const applicationQuery = trpc.support.guestApplications.useQuery(
     { publicId, accessToken: accessToken ?? "" },
     { enabled: Boolean(publicId && accessToken), refetchInterval: 5000 }
@@ -132,6 +137,7 @@ export default function ClientMessages() {
   const institutionLast = institutionQuery.data?.messages.at(-1);
   const financeLast = financeQuery.data?.messages.at(-1);
   const followUpLast = followUpQuery.data?.messages.at(-1);
+  const privateOfficeLast = privateOfficeQuery.data?.messages.at(-1);
   const request = applicationQuery.data?.requests[0];
   return (
     <main
@@ -205,6 +211,14 @@ export default function ClientMessages() {
             onClick={() =>
               setLocation(`/client/${publicId}/chat?mode=acceptance`)
             }
+          />
+          <ChannelRow
+            icon={<BriefcaseBusiness className="size-6" />}
+            iconTone="bg-[#263c38] text-[#d1fae5]"
+            title="المكتب الخاص"
+            preview={privateOfficeLast?.content || "تواصل مباشر مع المكتب الخاص للمؤسسة"}
+            meta={formatTime(privateOfficeLast?.createdAt) || "متاح"}
+            onClick={() => setLocation(`/client/${publicId}/chat?mode=private_office`)}
           />
         </div>
         <ClientBottomNav publicId={publicId} active="support" />
