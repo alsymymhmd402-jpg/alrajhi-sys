@@ -901,38 +901,86 @@ export default function CustomerUiBuilder() {
       reader.readAsDataURL(file);
     });
   const uploadImage = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files ?? []);
     event.target.value = "";
-    if (!file || !selected || selected.type !== "image") return;
-    if (!file.type.startsWith("image/"))
-      return toast.error("اختر ملف صورة من المعرض.");
+    if (!files.length || !selected || selected.type !== "image") return;
+    if (files.some(file => !file.type.startsWith("image/")))
+      return toast.error("اختر ملفات صور من المعرض فقط.");
     try {
-      const encoded = await toBase64Url(file);
-      const chunkSize = 22_000;
-      const totalChunks = Math.ceil(encoded.length / chunkSize);
-      const begin = await beginImageUpload.mutateAsync({
-        fileName: file.name,
-        mimeType: file.type,
-        size: file.size,
-        totalChunks,
-      });
-      for (let index = 0; index < totalChunks; index += 1)
-        await appendImageChunk.mutateAsync({
-          uploadId: begin.uploadId,
-          index,
-          data: encoded
-            .slice(index * chunkSize, (index + 1) * chunkSize)
-            .split("")
-            .reverse()
-            .join(""),
+      const uploadedUrls: string[] = [];
+      for (const file of files) {
+        const encoded = await toBase64Url(file);
+        const chunkSize = 22_000;
+        const totalChunks = Math.ceil(encoded.length / chunkSize);
+        const begin = await beginImageUpload.mutateAsync({
+          fileName: file.name,
+          mimeType: file.type,
+          size: file.size,
+          totalChunks,
         });
-      const uploaded = await finishImageUpload.mutateAsync({
-        uploadId: begin.uploadId,
-      });
-      updateSelected({ content: uploaded.url });
-      toast.success("أضيفت الصورة إلى العنصر المحدد.");
+        for (let index = 0; index < totalChunks; index += 1)
+          await appendImageChunk.mutateAsync({
+            uploadId: begin.uploadId,
+            index,
+            data: encoded
+              .slice(index * chunkSize, (index + 1) * chunkSize)
+              .split("")
+              .reverse()
+              .join(""),
+          });
+        const uploaded = await finishImageUpload.mutateAsync({
+          uploadId: begin.uploadId,
+        });
+        uploadedUrls.push(uploaded.url);
+      }
+      const firstUrl = uploadedUrls[0];
+      const baseY = Math.max(
+        6,
+        document.components.reduce(
+          (max, component) => Math.max(max, component.y + component.height + 5),
+          0
+        )
+      );
+      const extraImages = uploadedUrls.slice(1).map((url, index) => ({
+        ...nextComponent(
+          "image",
+          document.components.length + index,
+          baseY + index * 34
+        ),
+        content: url,
+        label: `صورة المعرض ${index + 2}`,
+      }));
+      const nextDocument: CustomerUiDocument = {
+        ...document,
+        canvas: {
+          ...document.canvas,
+          contentHeight: Math.min(
+            500,
+            Math.max(
+              contentHeight,
+              selected.y + selected.height + 12,
+              ...extraImages.map(image => image.y + image.height + 12)
+            )
+          ),
+        },
+        components: document.components
+          .map(component =>
+            component.id === selected.id
+              ? { ...component, content: firstUrl }
+              : component
+          )
+          .concat(extraImages),
+      };
+      mutateDocument(nextDocument);
+      if (extraImages.length)
+        setSelectedId(extraImages[extraImages.length - 1].id);
+      toast.success(
+        uploadedUrls.length === 1
+          ? "أضيفت الصورة إلى العنصر المحدد."
+          : `أضيفت ${uploadedUrls.length} صور من المعرض.`
+      );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "تعذر رفع الصورة.");
+      toast.error(error instanceof Error ? error.message : "تعذر رفع الصور.");
     }
   };
   const busy =
@@ -1039,11 +1087,15 @@ export default function CustomerUiBuilder() {
         </div>
       </header>
 
-      <div className="customer-ui-workspace grid min-h-[760px] gap-4 2xl:grid-cols-[285px_minmax(500px,1fr)_380px]">
-        <aside className="order-2 max-h-[820px] overflow-y-auto rounded-[1.6rem] border border-slate-200 bg-white p-4 shadow-sm 2xl:order-1">
+      <div className="customer-ui-workspace grid min-h-[760px] gap-4 lg:grid-cols-[250px_minmax(420px,1fr)_300px]">
+        <aside className="order-2 max-h-[820px] overflow-y-auto rounded-[1.6rem] border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-4 lg:order-1 lg:self-start">
           <div className="mb-4 flex items-center gap-2">
             <UsersRound className="size-5 text-blue-600" />
             <h2 className="font-extrabold text-slate-900">العملاء والعناصر</h2>
+          </div>
+          <div className="mb-4 flex items-center gap-1 rounded-xl bg-slate-50 p-1" aria-label="أدوات الجانب الأيسر">
+            <button type="button" title="مكتبة العناصر" onClick={() => window.document.getElementById("customer-ui-elements")?.scrollIntoView({ block: "nearest" })} className="flex flex-1 items-center justify-center rounded-lg bg-white px-2 py-2 text-blue-700 shadow-sm"><Blocks className="size-4" /><span className="mr-1 text-[10px] font-bold">العناصر</span></button>
+            <button type="button" title="الطبقات" onClick={() => window.document.getElementById("customer-ui-layers")?.scrollIntoView({ block: "nearest" })} className="flex flex-1 items-center justify-center rounded-lg px-2 py-2 text-slate-500 hover:bg-white"><Layers3 className="size-4" /><span className="mr-1 text-[10px] font-bold">الطبقات</span></button>
           </div>
           <div className="max-h-40 space-y-1 overflow-y-auto rounded-2xl bg-slate-50 p-2">
             {contactsQuery.data?.map(contact => (
@@ -1061,7 +1113,7 @@ export default function CustomerUiBuilder() {
             ))}
           </div>
           <div className="my-5 border-t border-slate-100" />
-          <div className="mb-3 flex items-center gap-2">
+          <div id="customer-ui-elements" className="mb-3 flex items-center gap-2">
             <Blocks className="size-5 text-blue-600" />
             <h3 className="font-bold text-slate-800">مكتبة العناصر</h3>
           </div>
@@ -1095,7 +1147,7 @@ export default function CustomerUiBuilder() {
             إضافة مساحة ومحتوى إلى الأسفل
           </Button>
           <div className="my-5 border-t border-slate-100" />
-          <div className="flex items-center gap-2">
+          <div id="customer-ui-layers" className="flex items-center gap-2">
             <Layers3 className="size-5 text-blue-600" />
             <h3 className="font-bold text-slate-800">الطبقات</h3>
           </div>
@@ -1119,7 +1171,7 @@ export default function CustomerUiBuilder() {
           </div>
         </aside>
 
-        <section className="order-1 min-w-0 rounded-[1.6rem] border border-slate-200 bg-slate-100/70 p-4 shadow-sm 2xl:order-2">
+        <section className="order-1 min-w-0 rounded-[1.6rem] border border-slate-200 bg-slate-100/70 p-4 shadow-sm lg:sticky lg:top-4 lg:order-2 lg:self-start">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-extrabold text-slate-900">
@@ -1140,7 +1192,9 @@ export default function CustomerUiBuilder() {
                   )}
                   {editorQuery.data.request && (
                     <span>
-                      · {requestStatusLabels[editorQuery.data.request.status] ?? editorQuery.data.request.status}
+                      ·{" "}
+                      {requestStatusLabels[editorQuery.data.request.status] ??
+                        editorQuery.data.request.status}
                     </span>
                   )}
                 </p>
@@ -1220,11 +1274,17 @@ export default function CustomerUiBuilder() {
           )}
         </section>
 
-        <aside className="order-3 max-h-[820px] overflow-y-auto rounded-[1.6rem] border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
+        <aside className="order-3 max-h-[820px] overflow-y-auto rounded-[1.6rem] border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-4 lg:order-3 lg:self-start">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="size-5 text-blue-600" />
               <h2 className="font-extrabold text-slate-900">خصائص العنصر</h2>
+            </div>
+            <div className="flex items-center gap-1 rounded-lg bg-slate-50 p-1" aria-label="اختصارات خصائص العنصر">
+              <button type="button" title="النص" onClick={() => window.document.getElementById("customer-ui-text-properties")?.scrollIntoView({ block: "nearest" })} className="rounded-md p-1.5 text-blue-700 hover:bg-white"><Type className="size-3.5" /></button>
+              <button type="button" title="الصورة" onClick={() => window.document.getElementById("customer-ui-image-properties")?.scrollIntoView({ block: "nearest" })} className="rounded-md p-1.5 text-violet-700 hover:bg-white"><Image className="size-3.5" /></button>
+              <button type="button" title="الإجراء" onClick={() => window.document.getElementById("customer-ui-action-properties")?.scrollIntoView({ block: "nearest" })} className="rounded-md p-1.5 text-indigo-700 hover:bg-white"><Link2 className="size-3.5" /></button>
+              <button type="button" title="المظهر" onClick={() => window.document.getElementById("customer-ui-style-properties")?.scrollIntoView({ block: "nearest" })} className="rounded-md p-1.5 text-slate-700 hover:bg-white"><Paintbrush className="size-3.5" /></button>
             </div>
             {selected && (
               <div className="flex gap-1">
@@ -1268,7 +1328,7 @@ export default function CustomerUiBuilder() {
                 />
               </div>
               {textLike && (
-                <section className="space-y-3 rounded-2xl border border-blue-100 bg-blue-50/40 p-3">
+                <section id="customer-ui-text-properties" className="space-y-3 rounded-2xl border border-blue-100 bg-blue-50/40 p-3">
                   <div className="flex items-center gap-2 text-sm font-extrabold text-blue-900">
                     <Type className="size-4" />
                     تحرير النص والخط
@@ -1368,7 +1428,7 @@ export default function CustomerUiBuilder() {
                 </section>
               )}
               {selected.type === "image" && (
-                <section className="space-y-3 rounded-2xl border border-violet-100 bg-violet-50/40 p-3">
+                <section id="customer-ui-image-properties" className="space-y-3 rounded-2xl border border-violet-100 bg-violet-50/40 p-3">
                   <div className="flex items-center gap-2 text-sm font-extrabold text-violet-900">
                     <Crop className="size-4" />
                     الصورة والقص والوضع
@@ -1377,6 +1437,7 @@ export default function CustomerUiBuilder() {
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={uploadImage}
                     className="hidden"
                   />
@@ -1487,16 +1548,52 @@ export default function CustomerUiBuilder() {
                     <UserRound className="size-4" />
                     بيانات العميل الظاهرة له
                   </div>
-                  <p className="text-xs leading-5 text-cyan-800">تُملأ البطاقة تلقائياً من ملف العميل المحدد، ولا تنسخ بياناته داخل التصميم.</p>
+                  <p className="text-xs leading-5 text-cyan-800">
+                    تُملأ البطاقة تلقائياً من ملف العميل المحدد، ولا تنسخ
+                    بياناته داخل التصميم.
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {(["name", "phone", "email"] as const).map(field => {
-                      const fields = selected.profileFields ?? ["name", "phone", "email"];
+                      const fields = selected.profileFields ?? [
+                        "name",
+                        "phone",
+                        "email",
+                      ];
                       const active = fields.includes(field);
-                      const label = field === "name" ? "الاسم" : field === "phone" ? "رقم الهاتف" : "البريد الإلكتروني";
-                      return <Button key={field} type="button" size="sm" variant={active ? "default" : "outline"} onClick={() => { const next = active ? fields.filter(item => item !== field) : [...fields, field]; if (next.length) updateSelected({ profileFields: next }); }} className={active ? "rounded-lg bg-cyan-700 hover:bg-cyan-800" : "rounded-lg"}>{label}</Button>;
+                      const label =
+                        field === "name"
+                          ? "الاسم"
+                          : field === "phone"
+                            ? "رقم الهاتف"
+                            : "البريد الإلكتروني";
+                      return (
+                        <Button
+                          key={field}
+                          type="button"
+                          size="sm"
+                          variant={active ? "default" : "outline"}
+                          onClick={() => {
+                            const next = active
+                              ? fields.filter(item => item !== field)
+                              : [...fields, field];
+                            if (next.length)
+                              updateSelected({ profileFields: next });
+                          }}
+                          className={
+                            active
+                              ? "rounded-lg bg-cyan-700 hover:bg-cyan-800"
+                              : "rounded-lg"
+                          }
+                        >
+                          {label}
+                        </Button>
+                      );
                     })}
                   </div>
-                  <div className="rounded-xl bg-white/80 p-2 text-xs text-cyan-900">معاينة: {editorQuery.data?.contact.displayName ?? "اسم العميل"}</div>
+                  <div className="rounded-xl bg-white/80 p-2 text-xs text-cyan-900">
+                    معاينة:{" "}
+                    {editorQuery.data?.contact.displayName ?? "اسم العميل"}
+                  </div>
                 </section>
               )}
               {selected.type === "application" && (
@@ -1505,9 +1602,26 @@ export default function CustomerUiBuilder() {
                     <BadgeCheck className="size-4" />
                     بطاقة حالة القبول والمتابعة
                   </div>
-                  <p className="text-xs leading-5 text-emerald-800">تعرض البطاقة حالة الطلب الفعلية للعميل، وتنتقل به إلى صفحة القبول عند الضغط عليها.</p>
-                  <div className="rounded-xl bg-white/80 p-3 text-xs text-emerald-900">{editorQuery.data?.request ? `${requestStatusLabels[editorQuery.data.request.status] ?? editorQuery.data.request.status} · ${editorQuery.data.request.requestNumber}` : "لا يوجد طلب مرتبط بهذا العميل حالياً."}</div>
-                  <Button type="button" size="sm" variant="outline" onClick={() => updateSelected({ action: { type: "application" } })} className="rounded-lg border-emerald-200">ربط بصفحة القبول</Button>
+                  <p className="text-xs leading-5 text-emerald-800">
+                    تعرض البطاقة حالة الطلب الفعلية للعميل، وتنتقل به إلى صفحة
+                    القبول عند الضغط عليها.
+                  </p>
+                  <div className="rounded-xl bg-white/80 p-3 text-xs text-emerald-900">
+                    {editorQuery.data?.request
+                      ? `${requestStatusLabels[editorQuery.data.request.status] ?? editorQuery.data.request.status} · ${editorQuery.data.request.requestNumber}`
+                      : "لا يوجد طلب مرتبط بهذا العميل حالياً."}
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      updateSelected({ action: { type: "application" } })
+                    }
+                    className="rounded-lg border-emerald-200"
+                  >
+                    ربط بصفحة القبول
+                  </Button>
                 </section>
               )}
               {selected.type === "status" && (
@@ -1576,9 +1690,17 @@ export default function CustomerUiBuilder() {
                         key={step.id}
                         type="button"
                         size="sm"
-                        variant={selected.statusCurrent === index ? "default" : "outline"}
+                        variant={
+                          selected.statusCurrent === index
+                            ? "default"
+                            : "outline"
+                        }
                         onClick={() => updateSelected({ statusCurrent: index })}
-                        className={selected.statusCurrent === index ? "h-8 rounded-lg bg-emerald-600 px-1 text-[10px] hover:bg-emerald-700" : "h-8 rounded-lg px-1 text-[10px]"}
+                        className={
+                          selected.statusCurrent === index
+                            ? "h-8 rounded-lg bg-emerald-600 px-1 text-[10px] hover:bg-emerald-700"
+                            : "h-8 rounded-lg px-1 text-[10px]"
+                        }
                       >
                         {index + 1}
                       </Button>
@@ -1586,9 +1708,24 @@ export default function CustomerUiBuilder() {
                   </div>
                 </section>
               )}
-              <section className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/40 p-3">
-                <div className="flex items-center gap-2 text-sm font-extrabold text-indigo-900"><Link2 className="size-4" />إجراء العنصر</div>
-                <select value={selected.action.type} onChange={event => updateSelected({ action: { type: event.target.value as CustomerUiComponent["action"]["type"], value: selected.action.value } })} className="h-9 w-full rounded-xl border border-indigo-200 bg-white px-2 text-xs">
+              <section id="customer-ui-action-properties" className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/40 p-3">
+                <div className="flex items-center gap-2 text-sm font-extrabold text-indigo-900">
+                  <Link2 className="size-4" />
+                  إجراء العنصر
+                </div>
+                <select
+                  value={selected.action.type}
+                  onChange={event =>
+                    updateSelected({
+                      action: {
+                        type: event.target
+                          .value as CustomerUiComponent["action"]["type"],
+                        value: selected.action.value,
+                      },
+                    })
+                  }
+                  className="h-9 w-full rounded-xl border border-indigo-200 bg-white px-2 text-xs"
+                >
                   <option value="none">لا يوجد إجراء</option>
                   <option value="chat">فتح خدمة العملاء</option>
                   <option value="institution">فتح صفحة المؤسسة</option>
@@ -1596,9 +1733,21 @@ export default function CustomerUiBuilder() {
                   <option value="profile">فتح الملف الشخصي</option>
                   <option value="url">فتح رابط خارجي</option>
                 </select>
-                {selected.action.type === "url" && <Input value={selected.action.value ?? ""} onChange={event => updateSelected({ action: { type: "url", value: event.target.value } })} placeholder="https://example.com" className="h-9 rounded-xl text-left" dir="ltr" />}
+                {selected.action.type === "url" && (
+                  <Input
+                    value={selected.action.value ?? ""}
+                    onChange={event =>
+                      updateSelected({
+                        action: { type: "url", value: event.target.value },
+                      })
+                    }
+                    placeholder="https://example.com"
+                    className="h-9 rounded-xl text-left"
+                    dir="ltr"
+                  />
+                )}
               </section>
-              <section className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <section id="customer-ui-style-properties" className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
                 <div className="flex items-center gap-2 text-sm font-extrabold text-slate-800">
                   <Move className="size-4" />
                   الموضع والمظهر
@@ -1733,7 +1882,9 @@ export default function CustomerUiBuilder() {
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => updateSelectedStyle({ shadow: !selected.style.shadow })}
+                    onClick={() =>
+                      updateSelectedStyle({ shadow: !selected.style.shadow })
+                    }
                     className={`rounded-lg ${selected.style.shadow ? "border-slate-700 bg-slate-200 text-slate-900" : ""}`}
                   >
                     ظل البطاقة
@@ -1745,7 +1896,11 @@ export default function CustomerUiBuilder() {
                     onClick={() => updateSelected({ locked: !selected.locked })}
                     className="rounded-lg"
                   >
-                    {selected.locked ? <UnlockKeyhole className="ml-1 size-3.5" /> : <LockKeyhole className="ml-1 size-3.5" />}
+                    {selected.locked ? (
+                      <UnlockKeyhole className="ml-1 size-3.5" />
+                    ) : (
+                      <LockKeyhole className="ml-1 size-3.5" />
+                    )}
                     {selected.locked ? "إلغاء القفل" : "قفل الموضع"}
                   </Button>
                 </div>
