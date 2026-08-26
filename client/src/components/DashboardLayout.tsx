@@ -218,10 +218,10 @@ function DashboardLayoutContent({
       </SidebarInset>
       {isMobile && (
         <nav aria-label="تنقل غرفة العمليات" className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-2 pb-[max(0.45rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_35px_-25px_rgba(15,23,42,.42)] backdrop-blur md:hidden" dir="rtl">
-          <div className="mx-auto grid max-w-lg grid-cols-5 gap-1">
-            {mobileNavItems.map(item => {
+          <div className="mx-auto flex max-w-full gap-1 overflow-x-auto overscroll-x-contain pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {menuItems.map(item => {
               const isActive = item.path === "/" ? pathname === "/" || pathname === "/dashboard" : pathname === item.path;
-              return <button key={item.path} type="button" onClick={() => setLocation(item.path)} className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold transition ${isActive ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-50"}`}><item.icon className="size-4" /><span className="truncate">{item.label}</span></button>;
+              return <button key={item.path} type="button" onClick={() => setLocation(item.path)} aria-current={isActive ? "page" : undefined} className={`flex min-h-12 w-[76px] shrink-0 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold transition ${isActive ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-50"}`}><item.icon className="size-4" /><span className="line-clamp-2 text-center leading-3">{item.label}</span></button>;
             })}
           </div>
         </nav>
