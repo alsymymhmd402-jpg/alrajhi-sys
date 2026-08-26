@@ -14,7 +14,7 @@ vi.mock("./db", () => ({
 }));
 vi.mock("./_core/llm", () => ({ invokeLLM: mocks.invokeLLM }));
 
-import { generateCustomerAutoReply } from "./customerResponder";
+import { buildChannelSystemInstruction, generateCustomerAutoReply } from "./customerResponder";
 
 describe("وكيل رد العملاء", () => {
   beforeEach(() => {
@@ -42,6 +42,14 @@ describe("وكيل رد العملاء", () => {
   it("يحيل الطلب الحساس دون استدعاء النموذج", async () => {
     await generateCustomerAutoReply({ conversationId: 8, guestName: "عميل", channel: "follow_up", content: "ما حالة طلبي؟" });
     expect(mocks.invokeLLM).not.toHaveBeenCalled();
-    expect(mocks.addOwnerMessage).toHaveBeenCalledWith(8, expect.stringContaining("فريق الدعم"), "follow_up");
+    expect(mocks.addOwnerMessage).toHaveBeenCalledWith(8, expect.stringContaining("فريق متابعة الطلب"), "follow_up");
+  });
+
+  it("يبني سياقاً مستقلاً لكل قناة ويمنع تقديم وعود مالية", () => {
+    const finance = buildChannelSystemInstruction("finance", "التزم بالإيجاز.");
+    const followUp = buildChannelSystemInstruction("follow_up", "التزم بالإيجاز.");
+    expect(finance).toContain("لا تقدم نصيحة مالية");
+    expect(finance).toContain("لا تؤكد مبالغ");
+    expect(followUp).toContain("لا تعد بالقبول أو الرفض");
   });
 });

@@ -42,6 +42,8 @@ type InstitutionChatProps = {
   guestName?: string;
   title?: string;
   subtitle?: string;
+  avatarUrl?: string;
+  wallpaperUrl?: string;
   onBack?: () => void;
   onProfileClick?: () => void;
   disabled?: boolean;
@@ -65,6 +67,8 @@ export function InstitutionChat({
   guestName = "العميل",
   title = "مراسلة المؤسسة",
   subtitle = "فريق خدمة العملاء متاح لمساعدتك",
+  avatarUrl = logoUrl,
+  wallpaperUrl,
   onBack,
   onProfileClick,
   disabled = false,
@@ -223,7 +227,7 @@ export function InstitutionChat({
             </Button>
             <button type="button" onClick={onProfileClick} className="flex min-w-0 items-center gap-2 text-right" aria-label="فتح ملف المؤسسة">
               <Avatar className="size-9 border border-white/30 shadow-sm">
-                <AvatarImage src={logoUrl} alt="مؤسسة الوليد بن طلال الإنسانية" />
+                <AvatarImage src={avatarUrl} alt={title} />
                 <AvatarFallback>م</AvatarFallback>
               </Avatar>
               <span className="min-w-0">
@@ -274,7 +278,16 @@ export function InstitutionChat({
         </div>
         <div
           ref={messagesPaneRef}
-          style={messagesStyle}
+          style={{
+            ...messagesStyle,
+            ...(wallpaperUrl
+              ? {
+                  backgroundImage: `linear-gradient(rgba(4,14,12,.88), rgba(4,14,12,.92)), url(${wallpaperUrl})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : {}),
+          }}
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_4%_9%,rgba(20,122,103,.18),transparent_24%),linear-gradient(135deg,#0b1512_25%,#09100e_25%,#09100e_50%,#0b1512_50%,#0b1512_75%,#09100e_75%)] bg-[length:24px_24px] px-3 py-5"
         >
           <div className="mx-auto mb-5 flex w-fit items-center gap-1.5 rounded-full border border-emerald-900 bg-[#0e1916]/90 px-3 py-1.5 text-[10px] font-bold text-emerald-100 shadow-sm">

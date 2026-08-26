@@ -3,6 +3,7 @@ import { GuestCallControl } from "@/components/GuestCallControl";
 import { GuestIncomingCall } from "@/components/GuestIncomingCall";
 import { Button } from "@/components/ui/button";
 import { getClientSession } from "@/lib/clientSession";
+import { brandAssets } from "@/lib/brandAssets";
 import { trpc } from "@/lib/trpc";
 import ClientSessionUnavailable from "./ClientSessionUnavailable";
 import { Loader2, MessageCircleMore } from "lucide-react";
@@ -88,6 +89,13 @@ export default function GuestChat() {
   const financeMode = mode === "finance";
   const acceptanceMode = mode === "acceptance";
   const privateOfficeMode = mode === "private_office";
+  const channelIdentity = financeMode
+    ? { avatarUrl: brandAssets.channelAvatars.finance, wallpaperUrl: brandAssets.channelCovers.finance }
+    : acceptanceMode
+      ? { avatarUrl: brandAssets.channelAvatars.followUp, wallpaperUrl: brandAssets.channelCovers.followUp }
+      : privateOfficeMode
+        ? { avatarUrl: brandAssets.channelAvatars.privateOffice, wallpaperUrl: brandAssets.channelCovers.privateOffice }
+        : { avatarUrl: brandAssets.institutionSeal, wallpaperUrl: brandAssets.channelCovers.institution };
   return <>
     <InstitutionChat
       messages={messages}
@@ -95,6 +103,8 @@ export default function GuestChat() {
       guestName={conversation.guestName}
       title={financeMode ? "نظام الإدارة المالية" : acceptanceMode ? "فريق دعم متابعة طلبك" : privateOfficeMode ? "المكتب الخاص" : "خدمة عملاء مؤسسة الوليد بن طلال"}
       subtitle={financeMode ? "استفسارات الدعم المالي والعمليات ذات الصلة" : acceptanceMode ? "استفسر عن مراحل طلبك وتحديثاته" : privateOfficeMode ? "تواصل مباشر مع المكتب الخاص للمؤسسة" : "فريق خدمة العملاء متاح لمساعدتك"}
+      avatarUrl={channelIdentity.avatarUrl}
+      wallpaperUrl={channelIdentity.wallpaperUrl}
       onBack={returnToMessages}
       onProfileClick={!financeMode && !acceptanceMode && !privateOfficeMode ? () => setLocation(`/client/${publicId}/institution`) : undefined}
       disabled={conversation.status === "closed"}

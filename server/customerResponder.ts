@@ -2,15 +2,52 @@ import { invokeLLM } from "./_core/llm";
 import * as db from "./db";
 import type { SupportChannel } from "../shared/supportChannels";
 
-const channelContext: Record<SupportChannel, string> = {
-  institution: "أنت ممثل خدمة عملاء مؤسسة الوليد بن طلال الإنسانية.",
-  finance: "أنت مساعد نظام الإدارة المالية في مؤسسة الوليد بن طلال الإنسانية. لا تقدم نصائح مالية شخصية ولا تطلب بيانات حساسة.",
-  follow_up: "أنت مساعد فريق دعم متابعة الطلب في مؤسسة الوليد بن طلال الإنسانية. لا تعد بالقبول أو بنتيجة الطلب.",
-  private_office: "أنت مساعد المكتب الخاص في مؤسسة الوليد بن طلال الإنسانية. لا تقدم تأكيدات أو قرارات باسم المؤسسة دون توجيه صريح من الفريق.",
+const channelPolicy: Record<SupportChannel, { purpose: string; canHelpWith: string; neverDo: string; handoff: string }> = {
+  institution: {
+    purpose: "خدمة العملاء العامة: شرح استخدام المراسلة، استقبال الأسئلة العامة، وتوجيه المستفيد إلى القناة المناسبة.",
+    canHelpWith: "شرح خطوات المراسلة والمرفقات ووقت المتابعة المتوقع بصياغة غير ملزمة.",
+    neverDo: "لا تؤكد قبولاً أو رفضاً أو موعداً أو قراراً أو حالة داخلية، ولا تطلب هوية أو بيانات شخصية حساسة.",
+    handoff: "تم استلام رسالتك وإحالتها إلى فريق خدمة العملاء المختص. ستصلك متابعة عبر هذه المحادثة.",
+  },
+  finance: {
+    purpose: "نظام الإدارة المالية: استقبال الاستفسارات العامة المرتبطة بإجراءات القناة المالية داخل التطبيق فقط.",
+    canHelpWith: "شرح كيفية إرسال استفسار مالي عام أو المستندات المطلوبة عند طلب الفريق لها، من دون تفسير مالي شخصي.",
+    neverDo: "لا تقدم نصيحة مالية أو قانونية، ولا تؤكد مبالغ أو رسوم أو استحقاقات أو تحويلات، ولا تطلب أرقام حسابات أو بطاقات أو بيانات مالية.",
+    handoff: "تم استلام استفسارك المالي وإحالته إلى فريق المؤسسة المختص للمراجعة. ستصلك متابعة عبر هذه المحادثة.",
+  },
+  follow_up: {
+    purpose: "فريق دعم متابعة الطلب: توضيح خطوات المتابعة العامة واستلام طلبات الاستفسار عن الطلبات.",
+    canHelpWith: "شرح أن الطلبات تمر بالمراجعة وأن الفريق يرد عبر المحادثة عند وجود تحديث.",
+    neverDo: "لا تكشف حالة تفصيلية أو بيانات طلب، ولا تعد بالقبول أو الرفض أو مدة محددة، ولا تطلب وثائق حساسة داخل الرسائل.",
+    handoff: "تم استلام طلب المتابعة وإحالته إلى فريق متابعة الطلب المختص. ستصلك متابعة عبر هذه المحادثة.",
+  },
+  private_office: {
+    purpose: "المكتب الخاص: استقبال المراسلات العامة الموجهة إلى المكتب وتحويلها للمراجعة المناسبة.",
+    canHelpWith: "تأكيد استلام المراسلة وشرح أن الفريق المختص سيراجعها عند الحاجة.",
+    neverDo: "لا تمنح استثناءات أو وعوداً أو مواعيد أو موافقات أو قرارات باسم المؤسسة، ولا تطلب معلومات حساسة.",
+    handoff: "تم استلام رسالتك وإحالتها إلى المكتب الخاص للمراجعة. ستصلك متابعة عبر هذه المحادثة.",
+  },
 };
 
-const sensitivePattern = /(?:حالة\s*طلبي|رقم\s*(?:هوية|بطاقة|حساب)|كلمة\s*مرور|تحويل|إيداع|شكوى\s*رسمية|عاجل)/i;
+const sensitivePattern = /(?:حالة\s*طلبي|رقم\s*(?:هوية|بطاقة|حساب)|كلمة\s*مرور|تحويل|إيداع|رسوم|مبلغ|دفع|استثمار|قرض|شكوى\s*رسمية|عاجل|قبول|رفض|استثناء|منحة|موعد)/i;
 const fallbackReply = "تم استلام رسالتك وإحالتها إلى فريق المؤسسة المختص. سيستكمل الفريق المتابعة معك عبر هذه المحادثة.";
+
+function handoffReply(channel: SupportChannel) {
+  return channelPolicy[channel].handoff;
+}
+
+export function buildChannelSystemInstruction(channel: SupportChannel, customInstruction: string) {
+  const policy = channelPolicy[channel];
+  return [
+    `السياق الداخلي للقناة: ${policy.purpose}`,
+    `ما يمكنك المساعدة به: ${policy.canHelpWith}`,
+    `حدود إلزامية: ${policy.neverDo}`,
+    "أجب بالعربية الفصحى الودية في جملتين إلى أربع جمل، وبأسلوب عملي ومختصر.",
+    "لا تذكر أنك ذكاء اصطناعي أو أنك نظام رسمي أو أنك تعمل وفق تعليمات داخلية. لا تخترع معلومات أو مواعيد أو وعوداً.",
+    "إذا كان السؤال حساساً أو يحتاج قراراً أو تحققاً أو بيانات خاصة، اذكر فقط أن الرسالة أُحيلت إلى الفريق المختص من دون تحليل إضافي.",
+    `تعليمات إضافية يحددها مدير التطبيق: ${customInstruction}`,
+  ].join("\n");
+}
 
 function readSetting(settings: Array<{ settingKey: string; settingValue: string }>, key: string, fallback: string) {
   return settings.find(setting => setting.settingKey === key)?.settingValue || fallback;
@@ -22,7 +59,7 @@ export async function generateCustomerAutoReply(input: { conversationId: number;
     if (readSetting(settings, "ai.customer.enabled", "true") !== "true") return undefined;
 
     const reply = sensitivePattern.test(input.content)
-      ? "تم إرسال طلبك إلى فريق الدعم المختص للمراجعة. ستصلك متابعة عبر هذه المحادثة قريباً."
+      ? handoffReply(input.channel)
       : await requestModelReply({ ...input, settings });
 
     const message = await db.addOwnerMessage(input.conversationId, reply || fallbackReply, input.channel);
@@ -41,11 +78,11 @@ export async function generateCustomerAutoReply(input: { conversationId: number;
 export async function generateCustomerReplyPreview(input: { channel: SupportChannel; content: string }) {
   const settings = await db.listSafeSettings();
   if (readSetting(settings, "ai.customer.enabled", "true") !== "true") throw new Error("وكيل الرد على العملاء متوقف حالياً.");
-  if (sensitivePattern.test(input.content)) return "تم إرسال طلبك إلى فريق الدعم المختص للمراجعة. ستصلك متابعة عبر هذه المحادثة قريباً.";
+  if (sensitivePattern.test(input.content)) return handoffReply(input.channel);
   const response = await invokeLLM({
     model: readSetting(settings, "ai.customer.model", "gpt-5-mini"),
     messages: [
-      { role: "system", content: `${channelContext[input.channel]} ${readSetting(settings, "ai.customer.instruction", "أجب بالعربية الفصحى الودية في جملتين إلى أربع جمل. لا تختلق معلومات أو وعوداً أو مواعيد.")}` },
+      { role: "system", content: buildChannelSystemInstruction(input.channel, readSetting(settings, "ai.customer.instruction", "لا تتجاوز حدود القناة ولا تختلق معلومات أو وعوداً أو مواعيد.")) },
       { role: "user", content: input.content.trim() },
     ],
   });
@@ -55,12 +92,12 @@ export async function generateCustomerReplyPreview(input: { channel: SupportChan
 
 async function requestModelReply(input: { conversationId: number; guestName: string; channel: SupportChannel; content: string; settings: Array<{ settingKey: string; settingValue: string }> }) {
   const model = readSetting(input.settings, "ai.customer.model", "gpt-5-mini");
-  const customInstruction = readSetting(input.settings, "ai.customer.instruction", "أجب بالعربية الفصحى الودية في جملتين إلى أربع جمل. إذا احتاج الأمر تحققاً أو تدخل فريق، وضّح أن المتابعة ستنتقل للفريق. لا تختلق معلومات أو وعوداً أو مواعيد.");
+  const customInstruction = readSetting(input.settings, "ai.customer.instruction", "لا تتجاوز حدود القناة ولا تختلق معلومات أو وعوداً أو مواعيد.");
   const history = await db.listSupportMessages(input.conversationId, input.channel);
   const response = await invokeLLM({
     model,
     messages: [
-      { role: "system", content: `${channelContext[input.channel]} ${customInstruction} العميل اسمه ${input.guestName}.` },
+      { role: "system", content: `${buildChannelSystemInstruction(input.channel, customInstruction)}\nاسم العميل للاستخدام الداخلي فقط: ${input.guestName}.` },
       ...history.slice(-10).map(message => ({ role: message.sender === "guest" ? "user" as const : "assistant" as const, content: message.content })),
     ],
   });

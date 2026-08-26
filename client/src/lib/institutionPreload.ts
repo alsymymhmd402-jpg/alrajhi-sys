@@ -32,6 +32,15 @@ export function addInstitutionResourceHints() {
   prefetch.as = "document";
   prefetch.setAttribute("data-institution-prefetch", "true");
   document.head.appendChild(prefetch);
+
+  localAssetUrls.forEach((href, index) => {
+    const preload = document.createElement("link");
+    preload.rel = "preload";
+    preload.as = "image";
+    preload.href = href;
+    preload.setAttribute("data-client-channel-preload", String(index));
+    document.head.appendChild(preload);
+  });
 }
 
 async function warmLocalAssets() {

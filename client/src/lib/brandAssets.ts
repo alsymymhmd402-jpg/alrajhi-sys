@@ -6,7 +6,7 @@ export const brandAssets = {
   institutionSeal: "/manus-storage/institution-seal_f05d4825.jpg",
   kingdomWatermark: "/manus-storage/kingdom-watermark_411c4335.png",
   channelAvatars: {
-    finance: "/manus-storage/preview-finance-avatar_3c1a8093.png",
+    finance: "/manus-storage/finance-institutional-profile_75895ad6.png",
     followUp: "/manus-storage/preview-follow-up-avatar_4fa4eee6.png",
     privateOffice: "/manus-storage/preview-private-office-avatar_79f324f6.png",
   },

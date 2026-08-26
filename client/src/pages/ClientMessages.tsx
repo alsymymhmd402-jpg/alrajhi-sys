@@ -3,6 +3,7 @@ import ClientSessionUnavailable from "@/pages/ClientSessionUnavailable";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getClientSession } from "@/lib/clientSession";
 import { getClientChatPath } from "@/lib/clientRoutes";
+import { primeInstitutionSite } from "@/lib/institutionPreload";
 import { brandAssets } from "@/lib/brandAssets";
 import { trpc } from "@/lib/trpc";
 import {
@@ -89,6 +90,9 @@ export default function ClientMessages() {
     [publicId]
   );
   const exitAttemptRef = useRef(0);
+  useEffect(() => {
+    primeInstitutionSite();
+  }, []);
   useEffect(() => {
     const pushGuard = () =>
       window.history.pushState(
