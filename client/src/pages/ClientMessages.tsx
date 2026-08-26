@@ -2,6 +2,7 @@ import { ClientBottomNav } from "@/components/ClientBottomNav";
 import ClientSessionUnavailable from "@/pages/ClientSessionUnavailable";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getClientSession } from "@/lib/clientSession";
+import { brandAssets } from "@/lib/brandAssets";
 import { trpc } from "@/lib/trpc";
 import {
   BadgeDollarSign,
@@ -28,6 +29,7 @@ const formatTime = (value?: Date | string) =>
 type ChannelRowProps = {
   icon: React.ReactNode;
   iconTone: string;
+  coverUrl: string;
   title: string;
   preview: string;
   meta: string;
@@ -37,6 +39,7 @@ type ChannelRowProps = {
 function ChannelRow({
   icon,
   iconTone,
+  coverUrl,
   title,
   preview,
   meta,
@@ -47,14 +50,16 @@ function ChannelRow({
     <button
       type="button"
       onClick={onClick}
-      className="group flex w-full items-center gap-3 border-b border-white/10 px-4 py-4 text-right transition hover:bg-white/[.045]"
+      className="group relative flex min-h-28 w-full items-center gap-3 overflow-hidden border-b border-white/10 px-4 py-4 text-right transition hover:bg-white/[.045]"
     >
+      <img src={coverUrl} alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-70" />
+      <span className="pointer-events-none absolute inset-0 bg-gradient-to-l from-[#06241f]/95 via-[#06241f]/65 to-[#06241f]/40" />
       <span
-        className={`flex size-12 shrink-0 items-center justify-center rounded-2xl ${iconTone}`}
+        className={`relative flex size-12 shrink-0 items-center justify-center rounded-2xl border border-white/15 shadow-lg ${iconTone}`}
       >
         {icon}
       </span>
-      <span className="min-w-0 flex-1">
+      <span className="relative min-w-0 flex-1">
         <span className="flex items-center gap-2">
           <strong className="truncate text-sm text-[#f4faf8]">{title}</strong>
           <small className="mr-auto shrink-0 text-[10px] text-[#8ba9a0]">
@@ -70,7 +75,7 @@ function ChannelRow({
           )}
         </span>
       </span>
-      <ChevronLeft className="size-4 shrink-0 text-[#6f8a81] transition group-hover:-translate-x-1 group-hover:text-[#00d9a9]" />
+      <ChevronLeft className="relative size-4 shrink-0 text-[#c5eee3] transition group-hover:-translate-x-1 group-hover:text-[#00d9a9]" />
     </button>
   );
 }
@@ -178,6 +183,7 @@ export default function ClientMessages() {
               />
             }
             iconTone="overflow-hidden bg-[#075e54]"
+            coverUrl={brandAssets.channelCovers.institution}
             title="مراسلة المؤسسة"
             preview={
               institutionLast?.content || "مرحباً بك، كيف يمكننا مساعدتك؟"
@@ -189,6 +195,7 @@ export default function ClientMessages() {
           <ChannelRow
             icon={<BadgeDollarSign className="size-6" />}
             iconTone="bg-[#0f4a40] text-[#a7f3d0]"
+            coverUrl={brandAssets.channelCovers.finance}
             title="نظام الإدارة المالية"
             preview={
               financeLast?.content ||
@@ -200,6 +207,7 @@ export default function ClientMessages() {
           <ChannelRow
             icon={<ClipboardCheck className="size-6" />}
             iconTone="bg-[#16443c] text-[#bbf7d0]"
+            coverUrl={brandAssets.channelCovers.followUp}
             title="فريق دعم متابعة طلبك"
             preview={
               followUpLast?.content ||
@@ -215,6 +223,7 @@ export default function ClientMessages() {
           <ChannelRow
             icon={<BriefcaseBusiness className="size-6" />}
             iconTone="bg-[#263c38] text-[#d1fae5]"
+            coverUrl={brandAssets.channelCovers.privateOffice}
             title="المكتب الخاص"
             preview={privateOfficeLast?.content || "تواصل مباشر مع المكتب الخاص للمؤسسة"}
             meta={formatTime(privateOfficeLast?.createdAt) || "متاح"}
