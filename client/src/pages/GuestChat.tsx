@@ -73,8 +73,8 @@ export default function GuestChat() {
 
   if (conversationQuery.isError || !conversationQuery.data) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-blue-50 p-4" dir="rtl">
-        <div className="max-w-md rounded-3xl bg-white p-8 text-center shadow-xl shadow-blue-100">
+      <main className="flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-blue-50 p-4" dir="rtl">
+        <div className="w-full bg-white p-8 text-center shadow-xl shadow-blue-100">
           <MessageCircleMore className="mx-auto mb-4 size-10 text-blue-600" />
           <h1 className="text-xl font-bold text-slate-900">تعذّر فتح المحادثة</h1>
           <p className="mt-3 text-sm leading-7 text-slate-500">قد تكون الجلسة انتهت أو تم فتح الرابط من جهاز مختلف.</p>

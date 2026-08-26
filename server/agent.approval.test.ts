@@ -31,6 +31,15 @@ import { appRouter } from "./routers";
 const context: TrpcContext = { user: null, req: { protocol: "https", headers: {} } as TrpcContext["req"], res: {} as TrpcContext["res"] };
 
 describe("موافقة وكيل التطبيق", () => {
+  it("يعرض تنبيهات غرفة المعالجة حسب الحالة المطلوبة", async () => {
+    const alerts = [{ id: 91, severity: "error", status: "open", title: "خطأ اختبار", detail: "تفاصيل الخطأ", source: "client" }];
+    vi.mocked(db.listAgentAlerts).mockResolvedValue(alerts as never);
+    const caller = appRouter.createCaller(context);
+
+    await expect(caller.agent.alerts({ status: "open" })).resolves.toEqual(alerts);
+    expect(db.listAgentAlerts).toHaveBeenCalledWith("open");
+  });
+
   it("يحفظ المعاينة ثم ينفذ إعداد اللون ويتحقق منه بعد الموافقة الصريحة", async () => {
     vi.mocked(db.getAgentThread).mockResolvedValue({ id: 7, status: "active" } as never);
     vi.mocked(db.listAgentMessages).mockResolvedValue([] as never);

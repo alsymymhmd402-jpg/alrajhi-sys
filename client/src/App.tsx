@@ -46,6 +46,7 @@ function Router() {
       <Route path={"/dashboard/calls"} component={Dashboard} />
       <Route path={"/dashboard/statuses"} component={Dashboard} />
       <Route path={"/dashboard/app-agent"} component={Dashboard} />
+      <Route path={"/dashboard/agent-errors"} component={Dashboard} />
       <Route path={"/dashboard/ai-settings"} component={Dashboard} />
       <Route path={"/dashboard/voice-ai"} component={Dashboard} />
       <Route path={"/dashboard/voice-models"} component={Dashboard} />

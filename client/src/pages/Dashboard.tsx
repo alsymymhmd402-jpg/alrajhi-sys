@@ -5,6 +5,7 @@ import { OwnerCallListener } from "@/components/OwnerCallListener";
 import { OwnerOutgoingCall } from "@/components/OwnerOutgoingCall";
 import CallLogs from "@/pages/CallLogs";
 import AgentConsole from "@/pages/AgentConsole";
+import AgentErrorRoom from "@/pages/AgentErrorRoom";
 import Contacts from "@/pages/Contacts";
 import CustomerUiBuilder from "@/pages/CustomerUiBuilder";
 import Invitations from "@/pages/Invitations";
@@ -184,6 +185,6 @@ function InboxContent() {
 export default function Dashboard() {
   const [location] = useLocation();
   const pathname = location.split("?")[0];
-  const content = pathname === "/dashboard/contacts" ? <Contacts /> : pathname === "/dashboard/customer-ui" ? <CustomerUiBuilder /> : pathname === "/dashboard/requests" ? <Requests /> : pathname.startsWith("/dashboard/chats/") ? <OwnerChatDetailPage /> : pathname === "/dashboard/chats" ? <OwnerChatsListPage /> : pathname === "/dashboard/archive" ? <InboxContent /> : pathname === "/dashboard/invitations" ? <Invitations /> : pathname === "/dashboard/calls" ? <CallLogs /> : pathname === "/dashboard/statuses" ? <InstitutionStatusStudio /> : pathname === "/dashboard/app-agent" ? <AgentConsole /> : pathname === "/dashboard/ai-settings" ? <AiSettings /> : pathname === "/dashboard/voice-ai" ? <VoiceStatus /> : pathname === "/dashboard/voice-models" ? <VoiceModels /> : pathname === "/dashboard/settings" ? <Settings /> : <OperationsDashboard />;
+  const content = pathname === "/dashboard/contacts" ? <Contacts /> : pathname === "/dashboard/customer-ui" ? <CustomerUiBuilder /> : pathname === "/dashboard/requests" ? <Requests /> : pathname.startsWith("/dashboard/chats/") ? <OwnerChatDetailPage /> : pathname === "/dashboard/chats" ? <OwnerChatsListPage /> : pathname === "/dashboard/archive" ? <InboxContent /> : pathname === "/dashboard/invitations" ? <Invitations /> : pathname === "/dashboard/calls" ? <CallLogs /> : pathname === "/dashboard/statuses" ? <InstitutionStatusStudio /> : pathname === "/dashboard/app-agent" ? <AgentConsole /> : pathname === "/dashboard/agent-errors" ? <AgentErrorRoom /> : pathname === "/dashboard/ai-settings" ? <AiSettings /> : pathname === "/dashboard/voice-ai" ? <VoiceStatus /> : pathname === "/dashboard/voice-models" ? <VoiceModels /> : pathname === "/dashboard/settings" ? <Settings /> : <OperationsDashboard />;
   return <DashboardLayout>{content}<OwnerCallListener /><AgentErrorMonitor /><AgentBrandSettings /></DashboardLayout>;
 }
