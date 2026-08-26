@@ -1,6 +1,9 @@
+import { brandAssets } from "@/lib/brandAssets";
+
 export const institutionUrl = "https://alwaleedphilanthropies.org/ar?hl=ar-YE";
 
-const preloadKey = "voice-circle:institution-site-preloaded:v1";
+const preloadKey = "voice-circle:institution-site-preloaded:v2";
+const localAssetUrls = [brandAssets.institutionWordmark, brandAssets.institutionSeal, brandAssets.kingdomWatermark, brandAssets.institutionGreenSplash, brandAssets.channelAvatars.finance, brandAssets.channelAvatars.followUp, brandAssets.channelAvatars.privateOffice, brandAssets.channelCovers.institution, brandAssets.channelCovers.finance, brandAssets.channelCovers.followUp, brandAssets.channelCovers.privateOffice];
 const cacheWindowMs = 7 * 24 * 60 * 60 * 1000;
 
 export function hasInstitutionPreload() {
@@ -31,8 +34,23 @@ export function addInstitutionResourceHints() {
   document.head.appendChild(prefetch);
 }
 
+async function warmLocalAssets() {
+  if (!("caches" in window)) return;
+  try {
+    const cache = await caches.open("voice-circle-assets-v2");
+    await Promise.all(localAssetUrls.map(async url => {
+      if (await cache.match(url)) return;
+      try {
+        const response = await fetch(url, { cache: "force-cache" });
+        if (response.ok) await cache.put(url, response.clone());
+      } catch { /* سيعاد المحاولة بهدوء في الزيارة التالية. */ }
+    }));
+  } catch { /* Cache API غير متاح في بعض المتصفحات الخاصة. */ }
+}
+
 export function primeInstitutionSite() {
   addInstitutionResourceHints();
+  void warmLocalAssets();
   if (hasInstitutionPreload() || document.body.querySelector("[data-institution-primer]")) return;
   const frame = document.createElement("iframe");
   frame.src = institutionUrl;
