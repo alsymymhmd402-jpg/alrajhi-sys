@@ -12,6 +12,7 @@ import ClientProfile from "./pages/ClientProfile";
 import ClientApplication from "./pages/ClientApplication";
 import ClientPrivacy from "./pages/ClientPrivacy";
 import ClientSessionUnavailable from "./pages/ClientSessionUnavailable";
+import ClientAccessHub from "./pages/ClientAccessHub";
 import ClientDemo from "./pages/ClientDemo";
 import ClientDemoChat from "./pages/ClientDemoChat";
 import GuestChat from "./pages/GuestChat";
@@ -25,6 +26,7 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Dashboard} />
       <Route path={"/client/access-unavailable"} component={ClientSessionUnavailable} />
+      <Route path={"/client/start"} component={ClientAccessHub} />
       <Route path={"/client/:publicId/messages"} component={ClientMessages} />
       <Route path={"/client/:publicId/chat"} component={GuestChat} />
       <Route path={"/client/:publicId/institution"} component={ClientInstitution} />
