@@ -115,7 +115,7 @@ export default function Contacts() {
               />
             </div>
           </div>
-          <div className="max-h-[650px] divide-y divide-blue-50 overflow-y-auto">
+          <div className="divide-y divide-blue-50">
             {contactsQuery.isLoading && (
               <div className="flex justify-center p-10">
                 <Loader2 className="size-5 animate-spin text-blue-600" />

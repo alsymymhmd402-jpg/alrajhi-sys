@@ -119,9 +119,8 @@
     min-height: 100%;
   }
 
-  html, body {
-    overflow: hidden;
-  }
+  /* The operations room must use normal document scrolling. Client chat screens
+     own their viewport and lock scrolling locally in their screen components. */
 
   * {
     @apply border-border outline-ring/50;
