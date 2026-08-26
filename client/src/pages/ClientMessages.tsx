@@ -2,13 +2,11 @@ import { ClientBottomNav } from "@/components/ClientBottomNav";
 import ClientSessionUnavailable from "@/pages/ClientSessionUnavailable";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getClientSession } from "@/lib/clientSession";
+import { getClientChatPath } from "@/lib/clientRoutes";
 import { brandAssets } from "@/lib/brandAssets";
 import { trpc } from "@/lib/trpc";
 import {
-  BadgeDollarSign,
-  BriefcaseBusiness,
   ChevronLeft,
-  ClipboardCheck,
   Loader2,
   MessageCircleMore,
   ShieldCheck,
@@ -192,10 +190,10 @@ export default function ClientMessages() {
             }
             meta={formatTime(institutionLast?.createdAt) || "الآن"}
             unread={conversation?.status === "open"}
-            onClick={() => setLocation(`/client/${publicId}/institution`)}
+            onClick={() => setLocation(getClientChatPath(publicId))}
           />
           <ChannelRow
-            icon={<BadgeDollarSign className="size-6" />}
+            icon={null}
             iconTone="bg-[#0f4a40] text-[#a7f3d0]"
             coverUrl={brandAssets.channelCovers.finance}
             avatarUrl={brandAssets.channelAvatars.finance}
@@ -205,10 +203,10 @@ export default function ClientMessages() {
               "استفسارات الدعم المالي والعمليات ذات الصلة"
             }
             meta={formatTime(financeLast?.createdAt) || "متاح"}
-            onClick={() => setLocation(`/client/${publicId}/chat?mode=finance`)}
+            onClick={() => setLocation(getClientChatPath(publicId, "finance"))}
           />
           <ChannelRow
-            icon={<ClipboardCheck className="size-6" />}
+            icon={null}
             iconTone="bg-[#16443c] text-[#bbf7d0]"
             coverUrl={brandAssets.channelCovers.followUp}
             avatarUrl={brandAssets.channelAvatars.followUp}
@@ -221,18 +219,18 @@ export default function ClientMessages() {
             }
             meta={formatTime(followUpLast?.createdAt) || "متابعة"}
             onClick={() =>
-              setLocation(`/client/${publicId}/chat?mode=acceptance`)
+              setLocation(getClientChatPath(publicId, "acceptance"))
             }
           />
           <ChannelRow
-            icon={<BriefcaseBusiness className="size-6" />}
+            icon={null}
             iconTone="bg-[#263c38] text-[#d1fae5]"
             coverUrl={brandAssets.channelCovers.privateOffice}
             avatarUrl={brandAssets.channelAvatars.privateOffice}
             title="المكتب الخاص"
             preview={privateOfficeLast?.content || "تواصل مباشر مع المكتب الخاص للمؤسسة"}
             meta={formatTime(privateOfficeLast?.createdAt) || "متاح"}
-            onClick={() => setLocation(`/client/${publicId}/chat?mode=private_office`)}
+            onClick={() => setLocation(getClientChatPath(publicId, "private_office"))}
           />
         </div>
         <ClientBottomNav publicId={publicId} active="support" />

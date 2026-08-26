@@ -6,9 +6,9 @@ export const brandAssets = {
   institutionSeal: "/manus-storage/institution-seal_f05d4825.jpg",
   kingdomWatermark: "/manus-storage/kingdom-watermark_411c4335.png",
   channelAvatars: {
-    finance: "/manus-storage/finance-avatar_e1c88c90.png",
-    followUp: "/manus-storage/follow-up-avatar_dc7fe206.png",
-    privateOffice: "/manus-storage/private-office-avatar_fbc691eb.png",
+    finance: "/manus-storage/preview-finance-avatar_3c1a8093.png",
+    followUp: "/manus-storage/preview-follow-up-avatar_4fa4eee6.png",
+    privateOffice: "/manus-storage/preview-private-office-avatar_79f324f6.png",
   },
   channelCovers: {
     institution: "/manus-storage/institution-cover-final_080370da.png",

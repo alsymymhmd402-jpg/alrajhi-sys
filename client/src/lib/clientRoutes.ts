@@ -9,3 +9,11 @@ export function getClientSectionPath(publicId: string, section: ClientSection) {
   };
   return `/client/${publicId}/${suffix[section]}`;
 }
+
+export function getClientChatPath(
+  publicId: string,
+  channel?: "finance" | "acceptance" | "private_office"
+) {
+  const base = `/client/${publicId}/chat`;
+  return channel ? `${base}?mode=${channel}` : base;
+}
