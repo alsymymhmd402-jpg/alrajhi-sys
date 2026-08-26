@@ -10,8 +10,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { brandAssets } from "@/lib/brandAssets";
 
-const logoUrl = "/manus-storage/alwaleed-philanthropies-mark_d87d264e.jpg";
+const logoUrl = brandAssets.institutionSeal;
 
 export default function ClientDemo() {
   const [, setLocation] = useLocation();

@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { brandAssets } from "@/lib/brandAssets";
 import {
   ArrowRight,
   CheckCheck,
@@ -51,7 +52,7 @@ type InstitutionChatProps = {
   footer?: React.ReactNode;
 };
 
-const logoUrl = "/manus-storage/alwaleed-philanthropies-mark_d87d264e.jpg";
+const logoUrl = brandAssets.institutionSeal;
 const timeFormatter = new Intl.DateTimeFormat("ar-EG", {
   hour: "numeric",
   minute: "2-digit",

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { brandAssets } from "@/lib/brandAssets";
 import {
   ChevronLeft,
   ChevronRight,
@@ -170,7 +171,7 @@ export function InstitutionStatusViewer({
             <header className="absolute inset-x-0 top-0 z-20 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent px-5 pb-8 pt-9 text-white">
               <div className="flex items-center gap-3">
                 <img
-                  src="/manus-storage/alwaleed-philanthropies-mark_d87d264e.jpg"
+                  src={brandAssets.institutionSeal}
                   alt="مؤسسة الوليد بن طلال الإنسانية"
                   className="size-9 rounded-full border border-white/40 object-cover"
                 />

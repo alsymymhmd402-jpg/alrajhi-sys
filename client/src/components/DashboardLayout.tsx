@@ -16,6 +16,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { Archive, Bot, ClipboardList, LayoutDashboard, Link2, MessageSquareText, PanelRight, PhoneCall, Settings2, Sparkles, UsersRound, Waves, CirclePlay, Paintbrush, Wrench } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
+import { brandAssets } from "@/lib/brandAssets";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "لوحة التحكم", path: "/" },
@@ -47,7 +48,7 @@ const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 480;
-const institutionLogo = "/manus-storage/alwaleed-philanthropies-mark_d87d264e.jpg";
+const institutionLogo = brandAssets.privateOffice;
 
 export default function DashboardLayout({
   children,

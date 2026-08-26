@@ -20,8 +20,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useLocation, useRoute } from "wouter";
-
-const logoUrl = "/manus-storage/alwaleed-philanthropies-mark_d87d264e.jpg";
+import { brandAssets } from "@/lib/brandAssets";
 const fileToBase64 = (file: File) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -63,8 +62,8 @@ export default function InviteGuest() {
 
   if (existingPublicId || previewQuery.isLoading)
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#050807]">
-        <Loader2 className="size-7 animate-spin text-[#29b78d]" />
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050807]">
+        <img src={brandAssets.institutionGreenSplash} alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-20" /><Loader2 className="relative size-7 animate-spin text-[#29b78d]" />
       </div>
     );
   if (previewQuery.isError || !previewQuery.data)
@@ -252,16 +251,18 @@ export default function InviteGuest() {
 
   return (
     <main
-      className="flex h-[100dvh] w-full items-center justify-center overflow-y-auto bg-[#050807] p-0"
+      className="relative flex h-[100dvh] w-full items-center justify-center overflow-y-auto bg-[#050807] p-0"
       dir="rtl"
     >
-      <section className="min-h-[100dvh] w-full overflow-hidden border border-[#1e3029] bg-[#080d0c] shadow-[0_24px_60px_-25px_rgba(0,0,0,.75)]">
+      <img src={brandAssets.institutionGreenSplash} alt="" aria-hidden="true" className="pointer-events-none fixed inset-0 h-full w-full object-cover opacity-10" />
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(180deg,rgba(5,8,7,.58),rgba(5,8,7,.94)_88%)]" />
+      <section className="relative z-10 min-h-[100dvh] w-full overflow-hidden border border-[#1e3029] bg-[#080d0c]/90 shadow-[0_24px_60px_-25px_rgba(0,0,0,.75)]">
         <header className="bg-[#075e54] px-6 py-5 text-white">
           <div className="flex items-center gap-3">
             <img
-              src={logoUrl}
+              src={brandAssets.institutionWordmark}
               alt="مؤسسة الوليد بن طلال الإنسانية"
-              className="size-12 rounded-2xl border border-white/25 object-cover"
+              className="h-12 w-44 rounded-xl border border-white/15 bg-white/95 object-contain px-2"
             />
             <div>
               <p className="text-base font-bold">مراسلة المؤسسة</p>

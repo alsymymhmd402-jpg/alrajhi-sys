@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { startCallRingtone, type RingtoneHandle } from "@/lib/callRingtone";
 import { trpc } from "@/lib/trpc";
+import { brandAssets } from "@/lib/brandAssets";
 import { Mic, Phone, PhoneOff, Radio, Volume2 } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type CallStatus = "idle" | "requesting" | "ringing" | "connecting" | "connected" | "reconnecting" | "failed" | "missed" | "ended";
-const INSTITUTION_LOGO_URL = "/manus-storage/alwaleed-philanthropies-mark_d87d264e.jpg";
+const INSTITUTION_LOGO_URL = brandAssets.institutionSeal;
 
 const callStatusCopy: Record<Exclude<CallStatus, "idle" | "ended" | "missed" | "failed">, { title: string; detail: string }> = {
   requesting: { title: "جارٍ تجهيز الاتصال", detail: "يتم تشغيل الميكروفون والاتصال بخدمة العملاء" },
