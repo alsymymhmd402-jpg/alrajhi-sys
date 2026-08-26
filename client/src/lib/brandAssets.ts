@@ -4,6 +4,12 @@ export const brandAssets = {
   privateOffice: "/manus-storage/private-office_ef5c18f0.jpg",
   institutionGreenSplash: "/manus-storage/institution-green-splash_1f36006a.jpg",
   institutionSeal: "/manus-storage/institution-seal_f05d4825.jpg",
+  kingdomWatermark: "/manus-storage/kingdom-watermark_411c4335.png",
+  channelAvatars: {
+    finance: "/manus-storage/finance-avatar_e1c88c90.png",
+    followUp: "/manus-storage/follow-up-avatar_dc7fe206.png",
+    privateOffice: "/manus-storage/private-office-avatar_fbc691eb.png",
+  },
   channelCovers: {
     institution: "/manus-storage/institution-cover-final_080370da.png",
     finance: "/manus-storage/finance-cover-final_3a9fb914.png",

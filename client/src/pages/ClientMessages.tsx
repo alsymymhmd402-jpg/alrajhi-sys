@@ -30,6 +30,7 @@ type ChannelRowProps = {
   icon: React.ReactNode;
   iconTone: string;
   coverUrl: string;
+  avatarUrl?: string;
   title: string;
   preview: string;
   meta: string;
@@ -40,6 +41,7 @@ function ChannelRow({
   icon,
   iconTone,
   coverUrl,
+  avatarUrl,
   title,
   preview,
   meta,
@@ -57,7 +59,7 @@ function ChannelRow({
       <span
         className={`relative flex size-12 shrink-0 items-center justify-center rounded-2xl border border-white/15 shadow-lg ${iconTone}`}
       >
-        {icon}
+        {avatarUrl ? <img src={avatarUrl} alt="" aria-hidden="true" className="size-full rounded-2xl object-cover" /> : icon}
       </span>
       <span className="relative min-w-0 flex-1">
         <span className="flex items-center gap-2">
@@ -184,7 +186,7 @@ export default function ClientMessages() {
             }
             iconTone="overflow-hidden bg-[#075e54]"
             coverUrl={brandAssets.channelCovers.institution}
-            title="مراسلة المؤسسة"
+            title="خدمة عملاء مؤسسة الوليد بن طلال"
             preview={
               institutionLast?.content || "مرحباً بك، كيف يمكننا مساعدتك؟"
             }
@@ -196,6 +198,7 @@ export default function ClientMessages() {
             icon={<BadgeDollarSign className="size-6" />}
             iconTone="bg-[#0f4a40] text-[#a7f3d0]"
             coverUrl={brandAssets.channelCovers.finance}
+            avatarUrl={brandAssets.channelAvatars.finance}
             title="نظام الإدارة المالية"
             preview={
               financeLast?.content ||
@@ -208,6 +211,7 @@ export default function ClientMessages() {
             icon={<ClipboardCheck className="size-6" />}
             iconTone="bg-[#16443c] text-[#bbf7d0]"
             coverUrl={brandAssets.channelCovers.followUp}
+            avatarUrl={brandAssets.channelAvatars.followUp}
             title="فريق دعم متابعة طلبك"
             preview={
               followUpLast?.content ||
@@ -224,6 +228,7 @@ export default function ClientMessages() {
             icon={<BriefcaseBusiness className="size-6" />}
             iconTone="bg-[#263c38] text-[#d1fae5]"
             coverUrl={brandAssets.channelCovers.privateOffice}
+            avatarUrl={brandAssets.channelAvatars.privateOffice}
             title="المكتب الخاص"
             preview={privateOfficeLast?.content || "تواصل مباشر مع المكتب الخاص للمؤسسة"}
             meta={formatTime(privateOfficeLast?.createdAt) || "متاح"}

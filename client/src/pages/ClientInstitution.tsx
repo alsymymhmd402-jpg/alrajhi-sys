@@ -24,7 +24,7 @@ import { useMemo, useState } from "react";
 import { useRoute } from "wouter";
 
 const logoUrl = brandAssets.institutionSeal;
-const institutionName = "خدمة عملاء مؤسسة الوليد بن طلال الإنسانية";
+const institutionName = "خدمة عملاء مؤسسة الوليد بن طلال";
 export default function ClientInstitution() {
   const [, params] = useRoute("/client/:publicId/institution");
   const publicId = params?.publicId ?? "";
