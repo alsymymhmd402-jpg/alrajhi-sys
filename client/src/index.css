@@ -114,6 +114,15 @@
 }
 
 @layer base {
+  html, body, #root {
+    width: 100%;
+    min-height: 100%;
+  }
+
+  html, body {
+    overflow: hidden;
+  }
+
   * {
     @apply border-border outline-ring/50;
   }

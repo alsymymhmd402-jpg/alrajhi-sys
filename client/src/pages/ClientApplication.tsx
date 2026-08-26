@@ -56,7 +56,7 @@ export default function ClientApplication() {
             حالة طلبك الحالية مع مؤسسة الوليد بن طلال الإنسانية
           </p>
         </header>
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto bg-[#080d0c] p-5">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto bg-[#080d0c] p-5 pb-[calc(6rem+env(safe-area-inset-bottom))]">
           <section className="rounded-3xl border border-emerald-900/70 bg-[#0d241c] p-5 text-emerald-50">
             <Icon className="size-9 text-[#47d7aa]" />
             <h2 className="mt-4 text-lg font-extrabold">{current.title}</h2>

@@ -167,7 +167,7 @@ export default function ClientProfile() {
             ملف العميل في مراسلة المؤسسة
           </p>
         </header>
-        <div className="flex-1 space-y-4 overflow-y-auto bg-[#080d0c] p-5">
+        <div className="flex-1 space-y-4 overflow-y-auto bg-[#080d0c] p-5 pb-[calc(6rem+env(safe-area-inset-bottom))]">
           <section className="rounded-2xl border border-[#1e3029] bg-[#101916] p-4">
             <div className="flex items-start gap-3">
               <FileText className="mt-0.5 size-5 text-[#29b78d]" />

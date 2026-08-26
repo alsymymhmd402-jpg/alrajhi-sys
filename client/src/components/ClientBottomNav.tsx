@@ -11,7 +11,7 @@ const items: Array<{ id: ClientSection; label: string; icon: typeof MessagesSqua
 
 export function ClientBottomNav({ publicId, active }: { publicId: string; active: ClientSection }) {
   const [, setLocation] = useLocation();
-  return <nav className="grid shrink-0 grid-cols-4 border-t border-[#1a2924] bg-[#080d0c] pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_28px_rgba(0,0,0,.28)]" aria-label="تنقل تطبيق مراسلة المؤسسة">
+  return <nav className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-4 border-t border-[#1a2924] bg-[#080d0c]/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_28px_rgba(0,0,0,.28)] backdrop-blur" aria-label="تنقل تطبيق مراسلة المؤسسة">
     {items.map(item => {
       const Icon = item.icon;
       const selected = item.id === active;

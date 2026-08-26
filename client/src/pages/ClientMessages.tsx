@@ -162,7 +162,7 @@ export default function ClientMessages() {
           <ShieldCheck className="size-4 text-[#5eead4]" />
           خدمة العملاء · قنوات التواصل والمتابعة
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#06241f]">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#06241f] pb-[calc(6rem+env(safe-area-inset-bottom))]">
           <ChannelRow
             icon={
               <img

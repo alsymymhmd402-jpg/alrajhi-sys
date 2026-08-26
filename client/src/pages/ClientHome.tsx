@@ -12,7 +12,7 @@ export default function ClientHome() {
   useEffect(() => {
     if (!accessToken) return;
     primeInstitutionSite();
-    setLocation(`/client/${publicId}/chat`);
+    setLocation(`/client/${publicId}/messages`);
   }, [accessToken, publicId, setLocation]);
   if (!accessToken) return <ClientSessionUnavailable />;
   return null;

@@ -96,7 +96,7 @@ export default function ClientInstitution() {
           </button>
         </div>
         {view === "overview" ? (
-          <div className="flex-1 overflow-y-auto bg-[#080d0c] p-5">
+          <div className="flex-1 overflow-y-auto bg-[#080d0c] p-5 pb-[calc(6rem+env(safe-area-inset-bottom))]">
             <CustomerUiPublishedView
               publicId={publicId}
               accessToken={accessToken}
