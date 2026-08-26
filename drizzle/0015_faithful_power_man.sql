@@ -1,0 +1,2 @@
+ALTER TABLE `support_messages` MODIFY COLUMN `sender` enum('guest','owner','ai','system') NOT NULL;--> statement-breakpoint
+ALTER TABLE `conversations` ADD `aiAutoReplyEnabled` boolean DEFAULT true NOT NULL;

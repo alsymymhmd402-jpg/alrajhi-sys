@@ -3,14 +3,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   listSafeSettings: vi.fn(),
   listSupportMessages: vi.fn(),
-  addOwnerMessage: vi.fn(),
+  addAiMessage: vi.fn(),
   invokeLLM: vi.fn(),
 }));
 
 vi.mock("./db", () => ({
   listSafeSettings: mocks.listSafeSettings,
   listSupportMessages: mocks.listSupportMessages,
-  addOwnerMessage: mocks.addOwnerMessage,
+  addAiMessage: mocks.addAiMessage,
 }));
 vi.mock("./_core/llm", () => ({ invokeLLM: mocks.invokeLLM }));
 
@@ -21,14 +21,14 @@ describe("وكيل رد العملاء", () => {
     vi.clearAllMocks();
     mocks.listSafeSettings.mockResolvedValue([]);
     mocks.listSupportMessages.mockResolvedValue([{ sender: "guest", content: "مرحباً" }]);
-    mocks.addOwnerMessage.mockResolvedValue({ id: 99, sender: "owner", content: "رد" });
+    mocks.addAiMessage.mockResolvedValue({ id: 99, sender: "ai", content: "رد" });
   });
 
   it("ينشئ رداً من النموذج للقناة المحددة", async () => {
     mocks.invokeLLM.mockResolvedValue({ choices: [{ message: { content: "أهلاً، يسعدنا مساعدتك." } }] });
     await generateCustomerAutoReply({ conversationId: 7, guestName: "عميل", channel: "finance", content: "كيف أتابع طلبي؟" });
     expect(mocks.invokeLLM).toHaveBeenCalledWith(expect.objectContaining({ model: "gpt-5-mini" }));
-    expect(mocks.addOwnerMessage).toHaveBeenCalledWith(7, "أهلاً، يسعدنا مساعدتك.", "finance");
+    expect(mocks.addAiMessage).toHaveBeenCalledWith(7, "أهلاً، يسعدنا مساعدتك.", "finance");
   });
 
   it("لا يرسل رداً عندما يكون الوكيل متوقفاً", async () => {
@@ -36,13 +36,20 @@ describe("وكيل رد العملاء", () => {
     const result = await generateCustomerAutoReply({ conversationId: 6, guestName: "عميل", channel: "institution", content: "مرحباً" });
     expect(result).toBeUndefined();
     expect(mocks.invokeLLM).not.toHaveBeenCalled();
-    expect(mocks.addOwnerMessage).not.toHaveBeenCalled();
+    expect(mocks.addAiMessage).not.toHaveBeenCalled();
+  });
+
+  it("لا يرسل رداً عندما يوقف المالك الذكاء الاصطناعي لهذه المحادثة فقط", async () => {
+    const result = await generateCustomerAutoReply({ conversationId: 12, guestName: "عميل", channel: "institution", content: "مرحباً", aiAutoReplyEnabled: false });
+    expect(result).toBeUndefined();
+    expect(mocks.invokeLLM).not.toHaveBeenCalled();
+    expect(mocks.addAiMessage).not.toHaveBeenCalled();
   });
 
   it("يحيل الطلب الحساس دون استدعاء النموذج", async () => {
     await generateCustomerAutoReply({ conversationId: 8, guestName: "عميل", channel: "follow_up", content: "ما حالة طلبي؟" });
     expect(mocks.invokeLLM).not.toHaveBeenCalled();
-    expect(mocks.addOwnerMessage).toHaveBeenCalledWith(8, expect.stringContaining("فريق متابعة الطلب"), "follow_up");
+    expect(mocks.addAiMessage).toHaveBeenCalledWith(8, expect.stringContaining("فريق متابعة الطلب"), "follow_up");
   });
 
   it("يبني سياقاً مستقلاً لكل قناة ويمنع تقديم وعود مالية", () => {

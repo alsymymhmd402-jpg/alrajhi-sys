@@ -106,6 +106,13 @@
       "when": 1787778165641,
       "tag": "0014_thin_gamma_corps",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "5",
+      "when": 1787784045140,
+      "tag": "0015_faithful_power_man",
+      "breakpoints": true
     }
   ]
 }

@@ -24,7 +24,7 @@ import { toast } from "sonner";
 
 export type InstitutionMessage = {
   id: number;
-  sender: "guest" | "owner" | "system";
+  sender: "guest" | "owner" | "ai" | "system";
   content: string;
   createdAt: Date | string;
 };

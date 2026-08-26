@@ -53,8 +53,9 @@ function readSetting(settings: Array<{ settingKey: string; settingValue: string 
   return settings.find(setting => setting.settingKey === key)?.settingValue || fallback;
 }
 
-export async function generateCustomerAutoReply(input: { conversationId: number; guestName: string; channel: SupportChannel; content: string }) {
+export async function generateCustomerAutoReply(input: { conversationId: number; guestName: string; channel: SupportChannel; content: string; aiAutoReplyEnabled?: boolean }) {
   try {
+    if (input.aiAutoReplyEnabled === false) return undefined;
     const settings = await db.listSafeSettings();
     if (readSetting(settings, "ai.customer.enabled", "true") !== "true") return undefined;
 
@@ -62,12 +63,12 @@ export async function generateCustomerAutoReply(input: { conversationId: number;
       ? handoffReply(input.channel)
       : await requestModelReply({ ...input, settings });
 
-    const message = await db.addOwnerMessage(input.conversationId, reply || fallbackReply, input.channel);
+    const message = await db.addAiMessage(input.conversationId, reply || fallbackReply, input.channel);
     return message;
   } catch (error) {
     console.warn("[CustomerResponder] AI reply unavailable; sending safe acknowledgement.", error);
     try {
-      return await db.addOwnerMessage(input.conversationId, fallbackReply, input.channel);
+      return await db.addAiMessage(input.conversationId, fallbackReply, input.channel);
     } catch (writeError) {
       console.warn("[CustomerResponder] Could not save fallback reply.", writeError);
       return undefined;

@@ -33,6 +33,14 @@ describe("إجراءات غرفة العمليات المباشرة", () => {
     expect(db.updateSupportConversation).toHaveBeenCalledWith(7, { archived: true });
   });
 
+  it("يحفظ إيقاف الرد الآلي للعميل الحالي فقط", async () => {
+    vi.mocked(db.updateSupportConversation).mockResolvedValue({ id: 7, aiAutoReplyEnabled: false } as never);
+    const caller = appRouter.createCaller(anonymousContext);
+
+    await expect(caller.support.update({ conversationId: 7, aiAutoReplyEnabled: false })).resolves.toMatchObject({ id: 7, aiAutoReplyEnabled: false });
+    expect(db.updateSupportConversation).toHaveBeenCalledWith(7, { aiAutoReplyEnabled: false });
+  });
+
   it("يحدّث حالة طلب من غرفة العمليات دون جلسة مالك", async () => {
     vi.mocked(db.updateServiceRequest).mockResolvedValue({ id: 3, status: "completed" } as never);
     const caller = appRouter.createCaller(anonymousContext);

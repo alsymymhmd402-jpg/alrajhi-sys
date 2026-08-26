@@ -1,12 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { FileText, Loader2, Paperclip, PhoneCall, SendHorizontal, X } from "lucide-react";
+import { Bot, FileText, Loader2, Paperclip, PhoneCall, SendHorizontal, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 export type SupportMessageVisual = {
   id: number;
-  sender: "guest" | "owner" | "system";
+  sender: "guest" | "owner" | "ai" | "system";
   content: string;
   createdAt: Date | string;
 };
@@ -112,16 +112,18 @@ export function SupportChatThread({
               if (message.sender === "system") {
                 return <article key={message.id} className="flex justify-center py-1"><div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800"><PhoneCall className="size-3.5" />{message.content}<time className="mr-1 text-[10px] text-amber-700/70">{timeFormatter.format(new Date(message.createdAt))}</time></div></article>;
               }
+              const isAi = message.sender === "ai";
               const isMine = message.sender === viewer;
               const messageAttachments = attachments.filter(attachment => attachment.messageId === message.id);
               return (
                 <article key={message.id} className={cn("flex max-w-[85%] flex-col gap-1", isMine ? "self-start items-start" : "self-end items-end")}>
-                  <div className={cn("rounded-2xl px-4 py-3 text-sm leading-7 shadow-sm", isMine ? "rounded-tr-md bg-blue-600 text-white" : "rounded-tl-md bg-slate-100 text-slate-700")}>
+                  <div className={cn("rounded-2xl px-4 py-3 text-sm leading-7 shadow-sm", isMine ? "rounded-tr-md bg-blue-600 text-white" : isAi ? "rounded-tl-md border border-violet-200 bg-violet-50 text-violet-950" : "rounded-tl-md bg-slate-100 text-slate-700")}>
+                    {isAi && <span className="mb-2 flex items-center gap-1 text-[10px] font-extrabold text-violet-700"><Bot className="size-3.5" />رد الذكاء الاصطناعي</span>}
                     {message.content}
                     {messageAttachments.map(attachment => attachment.mimeType.startsWith("image/") ? <a key={attachment.id} href={attachment.url} target="_blank" rel="noreferrer" className="mt-3 block overflow-hidden rounded-xl border border-white/20"><img src={attachment.url} alt={attachment.fileName} className="max-h-64 w-full object-cover" /></a> : <a key={attachment.id} href={attachment.url} target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-2 rounded-xl bg-black/10 px-3 py-2 text-xs underline"><FileText className="size-4" />{attachment.fileName}</a>)}
                   </div>
                   <time className="px-1 text-[11px] text-slate-400">
-                    {timeFormatter.format(new Date(message.createdAt))}{isMine ? " · تم الحفظ" : ""}
+                    {timeFormatter.format(new Date(message.createdAt))}{isMine ? " · تم الحفظ" : isAi ? " · محفوظ كاستجابة آلية" : ""}
                   </time>
                 </article>
               );
