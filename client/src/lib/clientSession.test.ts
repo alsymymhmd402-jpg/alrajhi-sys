@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { getClientSession, getInviteSession, saveClientSession, saveInviteSession } from "./clientSession";
+import { getClientAvatar, getClientSession, getInviteSession, saveClientAvatar, saveClientSession, saveInviteSession } from "./clientSession";
 
 class MemoryStorage {
   private values = new Map<string, string>();
@@ -24,5 +24,10 @@ describe("جلسة رابط العميل", () => {
 
     expect(getInviteSession("invite-001")).toBe("client-001");
     expect(getClientSession("client-001")).toBe("access-token-001");
+  });
+
+  it("يحفظ رابط صورة العميل ليظهر بعد العودة إلى التطبيق", () => {
+    saveClientAvatar("client-001", "https://example.test/customer-avatar.png");
+    expect(getClientAvatar("client-001")).toBe("https://example.test/customer-avatar.png");
   });
 });

@@ -30,10 +30,19 @@ const channelPolicy: Record<SupportChannel, { purpose: string; canHelpWith: stri
 };
 
 const sensitivePattern = /(?:حالة\s*طلبي|رقم\s*(?:هوية|بطاقة|حساب)|كلمة\s*مرور|تحويل|إيداع|رسوم|مبلغ|دفع|استثمار|قرض|شكوى\s*رسمية|عاجل|قبول|رفض|استثناء|منحة|موعد)/i;
+const outsideScopePattern = /(?:الطقس|مباراة|طبخ|وصفة|سياسة|انتخابات|سعر\s*(?:الدولار|الذهب|الأسهم)|علاج|تشخيص|فتوى|حكم\s*شرعي)/i;
 const fallbackReply = "تم استلام رسالتك وإحالتها إلى فريق المؤسسة المختص. سيستكمل الفريق المتابعة معك عبر هذه المحادثة.";
 
 function handoffReply(channel: SupportChannel) {
   return channelPolicy[channel].handoff;
+}
+
+function shortPersonalReply(content: string, guestName: string) {
+  const name = guestName.trim().slice(0, 60) || "ضيفنا الكريم";
+  const normalized = content.replace(/\s+/g, " ").trim();
+  const compact = normalized.split(/(?<=[.!؟])\s+/).slice(0, 2).join(" ").slice(0, 360).trim();
+  const withGreeting = compact.includes(name) ? compact : `مرحباً ${name}، ${compact}`;
+  return withGreeting.slice(0, 400);
 }
 
 export function buildChannelSystemInstruction(channel: SupportChannel, customInstruction: string) {
@@ -42,9 +51,9 @@ export function buildChannelSystemInstruction(channel: SupportChannel, customIns
     `السياق الداخلي للقناة: ${policy.purpose}`,
     `ما يمكنك المساعدة به: ${policy.canHelpWith}`,
     `حدود إلزامية: ${policy.neverDo}`,
-    "أجب بالعربية الفصحى الودية في جملتين إلى أربع جمل، وبأسلوب عملي ومختصر.",
+    "أجب بالعربية الفصحى الودية في جملة أو جملتين قصيرتين فقط، وبأسلوب عملي ومختصر جداً.",
     "لا تذكر أنك ذكاء اصطناعي أو أنك نظام رسمي أو أنك تعمل وفق تعليمات داخلية. لا تخترع معلومات أو مواعيد أو وعوداً.",
-    "إذا كان السؤال حساساً أو يحتاج قراراً أو تحققاً أو بيانات خاصة، اذكر فقط أن الرسالة أُحيلت إلى الفريق المختص من دون تحليل إضافي.",
+    "إذا كان السؤال حساساً أو يحتاج قراراً أو تحققاً أو بيانات خاصة أو لا يخص خدمات المؤسسة، اذكر فقط أن الرسالة أُحيلت إلى الفريق المختص من دون تحليل إضافي.",
     `تعليمات إضافية يحددها مدير التطبيق: ${customInstruction}`,
   ].join("\n");
 }
@@ -59,16 +68,16 @@ export async function generateCustomerAutoReply(input: { conversationId: number;
     const settings = await db.listSafeSettings();
     if (readSetting(settings, "ai.customer.enabled", "true") !== "true") return undefined;
 
-    const reply = sensitivePattern.test(input.content)
+    const reply = sensitivePattern.test(input.content) || outsideScopePattern.test(input.content)
       ? handoffReply(input.channel)
       : await requestModelReply({ ...input, settings });
 
-    const message = await db.addAiMessage(input.conversationId, reply || fallbackReply, input.channel);
+    const message = await db.addAiMessage(input.conversationId, shortPersonalReply(reply || fallbackReply, input.guestName), input.channel);
     return message;
   } catch (error) {
     console.warn("[CustomerResponder] AI reply unavailable; sending safe acknowledgement.", error);
     try {
-      return await db.addAiMessage(input.conversationId, fallbackReply, input.channel);
+      return await db.addAiMessage(input.conversationId, shortPersonalReply(fallbackReply, input.guestName), input.channel);
     } catch (writeError) {
       console.warn("[CustomerResponder] Could not save fallback reply.", writeError);
       return undefined;
@@ -79,7 +88,7 @@ export async function generateCustomerAutoReply(input: { conversationId: number;
 export async function generateCustomerReplyPreview(input: { channel: SupportChannel; content: string }) {
   const settings = await db.listSafeSettings();
   if (readSetting(settings, "ai.customer.enabled", "true") !== "true") throw new Error("وكيل الرد على العملاء متوقف حالياً.");
-  if (sensitivePattern.test(input.content)) return handoffReply(input.channel);
+  if (sensitivePattern.test(input.content) || outsideScopePattern.test(input.content)) return handoffReply(input.channel);
   const response = await invokeLLM({
     model: readSetting(settings, "ai.customer.model", "gpt-5-mini"),
     messages: [
@@ -88,7 +97,7 @@ export async function generateCustomerReplyPreview(input: { channel: SupportChan
     ],
   });
   const content = response.choices[0]?.message?.content;
-  return typeof content === "string" && content.trim() ? content.trim().slice(0, 1400) : fallbackReply;
+  return typeof content === "string" && content.trim() ? content.trim().slice(0, 360) : fallbackReply;
 }
 
 async function requestModelReply(input: { conversationId: number; guestName: string; channel: SupportChannel; content: string; settings: Array<{ settingKey: string; settingValue: string }> }) {
@@ -103,5 +112,5 @@ async function requestModelReply(input: { conversationId: number; guestName: str
     ],
   });
   const content = response.choices[0]?.message?.content;
-  return typeof content === "string" ? content.trim().slice(0, 1400) : "";
+  return typeof content === "string" ? content.trim().slice(0, 360) : "";
 }

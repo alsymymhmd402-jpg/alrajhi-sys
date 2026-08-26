@@ -1,6 +1,7 @@
 const sessionKey = (publicId: string) => `voice-circle:${publicId}`;
 const persistentKey = (publicId: string) => `voice-circle:client:${publicId}`;
 const inviteKey = (inviteCode: string) => `voice-circle:invite:${inviteCode}`;
+const avatarKey = (publicId: string) => `voice-circle:client-avatar:${publicId}`;
 
 export function saveClientSession(publicId: string, accessToken: string) {
   sessionStorage.setItem(sessionKey(publicId), accessToken);
@@ -20,4 +21,12 @@ export function saveInviteSession(inviteCode: string, publicId: string) {
 export function getInviteSession(inviteCode: string) {
   const publicId = localStorage.getItem(inviteKey(inviteCode));
   return publicId && getClientSession(publicId) ? publicId : null;
+}
+
+export function saveClientAvatar(publicId: string, url: string) {
+  localStorage.setItem(avatarKey(publicId), url);
+}
+
+export function getClientAvatar(publicId: string) {
+  return localStorage.getItem(avatarKey(publicId));
 }

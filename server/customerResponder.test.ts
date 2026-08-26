@@ -28,7 +28,7 @@ describe("وكيل رد العملاء", () => {
     mocks.invokeLLM.mockResolvedValue({ choices: [{ message: { content: "أهلاً، يسعدنا مساعدتك." } }] });
     await generateCustomerAutoReply({ conversationId: 7, guestName: "عميل", channel: "finance", content: "كيف أتابع طلبي؟" });
     expect(mocks.invokeLLM).toHaveBeenCalledWith(expect.objectContaining({ model: "gpt-5-mini" }));
-    expect(mocks.addAiMessage).toHaveBeenCalledWith(7, "أهلاً، يسعدنا مساعدتك.", "finance");
+    expect(mocks.addAiMessage).toHaveBeenCalledWith(7, "مرحباً عميل، أهلاً، يسعدنا مساعدتك.", "finance");
   });
 
   it("لا يرسل رداً عندما يكون الوكيل متوقفاً", async () => {
@@ -52,11 +52,18 @@ describe("وكيل رد العملاء", () => {
     expect(mocks.addAiMessage).toHaveBeenCalledWith(8, expect.stringContaining("فريق متابعة الطلب"), "follow_up");
   });
 
+  it("يحيل السؤال غير المرتبط بخدمات المؤسسة برد قصير من دون استدعاء النموذج", async () => {
+    await generateCustomerAutoReply({ conversationId: 9, guestName: "ليان", channel: "institution", content: "كيف سيكون الطقس غداً؟" });
+    expect(mocks.invokeLLM).not.toHaveBeenCalled();
+    expect(mocks.addAiMessage).toHaveBeenCalledWith(9, expect.stringContaining("مرحباً ليان"), "institution");
+  });
+
   it("يبني سياقاً مستقلاً لكل قناة ويمنع تقديم وعود مالية", () => {
     const finance = buildChannelSystemInstruction("finance", "التزم بالإيجاز.");
     const followUp = buildChannelSystemInstruction("follow_up", "التزم بالإيجاز.");
     expect(finance).toContain("لا تقدم نصيحة مالية");
     expect(finance).toContain("لا تؤكد مبالغ");
     expect(followUp).toContain("لا تعد بالقبول أو الرفض");
+    expect(finance).toContain("جملة أو جملتين قصيرتين");
   });
 });

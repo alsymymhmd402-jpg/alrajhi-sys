@@ -11,6 +11,8 @@ import { brandAssets } from "@/lib/brandAssets";
 import {
   hasInstitutionPreload,
   institutionUrl,
+  markInstitutionPreloaded,
+  primeInstitutionSite,
 } from "@/lib/institutionPreload";
 import {
   Building2,
@@ -20,7 +22,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRoute } from "wouter";
 
 const logoUrl = brandAssets.institutionSeal;
@@ -35,6 +37,10 @@ export default function ClientInstitution() {
   const [view, setView] = useState<"overview" | "website">("website");
   const [frameKey, setFrameKey] = useState(0);
   const [loading, setLoading] = useState(() => !hasInstitutionPreload());
+
+  useEffect(() => {
+    primeInstitutionSite();
+  }, []);
 
   if (!accessToken) return <ClientSessionUnavailable />;
   return (
@@ -64,7 +70,7 @@ export default function ClientInstitution() {
           <button
             type="button"
             onClick={() => {
-              setLoading(true);
+              setLoading(!hasInstitutionPreload());
               setView("website");
             }}
             className={`flex items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold ${view === "website" ? "bg-[#0e3d32] text-[#63ddb8]" : "text-emerald-100/45"}`}
@@ -132,7 +138,7 @@ export default function ClientInstitution() {
               key={frameKey}
               title="موقع مؤسسة الوليد بن طلال الإنسانية"
               src={institutionUrl}
-              onLoad={() => setLoading(false)}
+              onLoad={() => { markInstitutionPreloaded(); setLoading(false); }}
               className="h-full min-h-[480px] w-full border-0"
               referrerPolicy="strict-origin-when-cross-origin"
             />

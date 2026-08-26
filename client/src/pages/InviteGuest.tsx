@@ -251,13 +251,13 @@ export default function InviteGuest() {
 
   return (
     <main
-      className="relative flex h-[100dvh] w-full items-center justify-center overflow-y-auto bg-[#050807] p-0"
+      className="relative h-[100dvh] w-full overflow-hidden bg-[#050807] p-0"
       dir="rtl"
     >
       <img src={brandAssets.institutionGreenSplash} alt="" aria-hidden="true" className="pointer-events-none fixed inset-0 h-full w-full object-cover opacity-10" />
       <div className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(180deg,rgba(5,8,7,.58),rgba(5,8,7,.94)_88%)]" />
-      <section className="relative z-10 min-h-[100dvh] w-full overflow-hidden border border-[#1e3029] bg-[#080d0c]/90 shadow-[0_24px_60px_-25px_rgba(0,0,0,.75)]">
-        <header className="bg-[#075e54] px-6 py-5 text-white">
+      <section className="relative z-10 flex h-[100dvh] w-full flex-col overflow-hidden border border-[#1e3029] bg-[#080d0c]/90 shadow-[0_24px_60px_-25px_rgba(0,0,0,.75)]">
+        <header className="z-20 shrink-0 bg-[#075e54] px-6 py-5 text-white shadow-lg">
           <div className="flex items-center gap-3">
             <img
               src={brandAssets.institutionWordmark}
@@ -272,7 +272,7 @@ export default function InviteGuest() {
             </div>
           </div>
         </header>
-        <div className="p-6 sm:p-7">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:p-7">
           {step === "profile" ? profileForm : requestForm}
         </div>
       </section>

@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { getClientSession } from "@/lib/clientSession";
+import { getClientAvatar, getClientSession, saveClientAvatar } from "@/lib/clientSession";
 import { trpc } from "@/lib/trpc";
 import {
   Camera,
@@ -19,7 +19,6 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useLocation, useRoute } from "wouter";
 
-const logoUrl = "/manus-storage/alwaleed-philanthropies-mark_d87d264e.jpg";
 const fileToBase64 = (file: File) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -46,11 +45,16 @@ export default function ClientProfile() {
   const [phone, setPhone] = useState("");
   const [extraData, setExtraData] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [storedAvatarUrl, setStoredAvatarUrl] = useState<string | null>(() => publicId ? getClientAvatar(publicId) : null);
   useEffect(() => {
     if (profileQuery.data?.contact) {
       setEmail(profileQuery.data.contact.email ?? "");
       setPhone(profileQuery.data.contact.phone ?? "");
       setExtraData(profileQuery.data.contact.extraData ?? "");
+      if (profileQuery.data.contact.avatarUrl) {
+        saveClientAvatar(publicId, profileQuery.data.contact.avatarUrl);
+        setStoredAvatarUrl(profileQuery.data.contact.avatarUrl);
+      }
     }
   }, [profileQuery.data?.contact]);
   const updateMutation = trpc.support.guestUpdateProfile.useMutation({
@@ -101,11 +105,13 @@ export default function ClientProfile() {
             index,
             data: chunks[index]!.split("").reverse().join(""),
           });
-        await avatarFinishMutation.mutateAsync({
+        const uploaded = await avatarFinishMutation.mutateAsync({
           publicId,
           accessToken,
           uploadId: session.uploadId,
         });
+        saveClientAvatar(publicId, uploaded.url);
+        setStoredAvatarUrl(uploaded.url);
       }
       await updateMutation.mutateAsync({
         publicId,
@@ -131,7 +137,7 @@ export default function ClientProfile() {
                 src={
                   avatarFile
                     ? URL.createObjectURL(avatarFile)
-                    : (contact?.avatarUrl ?? logoUrl)
+                    : (storedAvatarUrl ?? contact?.avatarUrl ?? undefined)
                 }
                 alt="صورة ملف العميل"
               />
