@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">غرفة عمليات مؤسسة الوليد بن طلال</string>
+    <string name="title_activity_main">غرفة عمليات مؤسسة الوليد بن طلال</string>
+    <string name="package_name">org.alwaleed.operations</string>
+    <string name="custom_url_scheme">org.alwaleed.operations</string>
+</resources>
