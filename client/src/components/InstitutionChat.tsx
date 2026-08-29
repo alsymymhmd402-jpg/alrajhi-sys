@@ -53,6 +53,7 @@ type InstitutionChatProps = {
   callControl: React.ReactNode;
   onVideoRequest: () => void;
   footer?: React.ReactNode;
+  isTyping?: boolean;
 };
 
 const logoUrl = brandAssets.institutionSeal;
@@ -78,8 +79,10 @@ export function InstitutionChat({
   callControl,
   onVideoRequest,
   footer,
+  isTyping = false,
 }: InstitutionChatProps) {
   const [draft, setDraft] = useState("");
+  const [optimisticMessage, setOptimisticMessage] = useState<InstitutionMessage | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -94,7 +97,11 @@ export function InstitutionChat({
   useEffect(() => {
     const pane = messagesPaneRef.current;
     if (pane) pane.scrollTo({ top: pane.scrollHeight, behavior: "smooth" });
-  }, [messages.length, isSending]);
+  }, [messages.length, isSending, optimisticMessage]);
+  useEffect(() => {
+    if (!optimisticMessage) return;
+    if (messages.some(message => message.sender === "guest" && message.content === optimisticMessage.content)) setOptimisticMessage(null);
+  }, [messages, optimisticMessage]);
   useEffect(
     () => () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -150,7 +157,9 @@ export function InstitutionChat({
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!draft.trim() || disabled || isSending) return;
-    onSend(draft.trim());
+    const content = draft.trim();
+    setOptimisticMessage({ id: -Date.now(), sender: "guest", content, createdAt: new Date() });
+    onSend(content);
     setDraft("");
     keepComposerFocused();
   };
@@ -209,10 +218,10 @@ export function InstitutionChat({
   return (
     <main
       style={keyboardStyle}
-      className="h-[100dvh] overflow-hidden bg-[#050807] p-0"
+      className="h-[100svh] overflow-hidden bg-[#050807] p-0"
       dir="rtl"
     >
-      <section className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-[#080d0c] shadow-2xl">
+      <section className="relative flex h-[100svh] w-full flex-col overflow-hidden bg-[#080d0c] shadow-2xl">
         <header className="z-20 flex shrink-0 items-center justify-between border-b border-white/10 bg-[#0b5e53] px-3 py-2 text-white shadow-lg">
           <div className="flex min-w-0 items-center gap-2">
             <Button
@@ -295,7 +304,7 @@ export function InstitutionChat({
             مراسلة خاصة وآمنة مع المؤسسة
           </div>
           <div className="space-y-2.5">
-            {messages.map(message => {
+            {[...messages, ...(optimisticMessage ? [optimisticMessage] : [])].map(message => {
               const mine = message.sender === "guest";
               const items = attachments.filter(
                 item => item.messageId === message.id
@@ -378,13 +387,14 @@ export function InstitutionChat({
                 </article>
               );
             })}
+            {isTyping && <article className="flex justify-end"><div className="rounded-2xl rounded-tl-md border border-violet-900/60 bg-[#151b27] px-3 py-2 text-xs text-violet-200"><span className="mr-1 inline-flex gap-1 align-middle"><i className="size-1.5 animate-pulse rounded-full bg-violet-300" /><i className="size-1.5 animate-pulse rounded-full bg-violet-300 [animation-delay:120ms]" /><i className="size-1.5 animate-pulse rounded-full bg-violet-300 [animation-delay:240ms]" /></span>الطرف الآخر يكتب الآن…</div></article>}
             <div ref={bottomRef} />
           </div>
         </div>
         <form
           onSubmit={submit}
           style={composerStyle}
-          className="z-20 shrink-0 border-t border-[#1c2b26] bg-[#0c1311] p-2.5 shadow-[0_-8px_20px_rgba(0,0,0,.28)] transition-transform duration-150"
+          className="z-20 shrink-0 border-t border-[#1c2b26] bg-[#0c1311] p-2.5 shadow-[0_-8px_20px_rgba(0,0,0,.28)]"
         >
           {disabled && (
             <p className="mb-2 rounded-xl bg-amber-950/70 px-3 py-2 text-center text-xs text-amber-100">

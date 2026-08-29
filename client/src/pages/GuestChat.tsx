@@ -7,7 +7,7 @@ import { brandAssets } from "@/lib/brandAssets";
 import { trpc } from "@/lib/trpc";
 import ClientSessionUnavailable from "./ClientSessionUnavailable";
 import { Loader2, MessageCircleMore } from "lucide-react";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocation, useRoute } from "wouter";
 import { io } from "socket.io-client";
@@ -29,6 +29,8 @@ export default function GuestChat() {
   const channel = mode === "finance" ? "finance" : mode === "acceptance" ? "follow_up" : mode === "private_office" ? "private_office" : "institution";
   const utils = trpc.useUtils();
   const knownMessageIdsRef = useRef<Set<number> | null>(null);
+  const [isAiTyping, setIsAiTyping] = useState(false);
+  const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const returnToMessages = () => setLocation(`/client/${publicId}/messages`);
   const conversationQuery = trpc.support.guestConversation.useQuery(
     { publicId, accessToken: accessToken ?? "", channel },
@@ -48,7 +50,8 @@ export default function GuestChat() {
   useEffect(() => {
     if (!publicId || !accessToken) return;
     const socket = io({ path: "/api/realtime", transports: ["websocket"], auth: { role: "guest", publicId, accessToken } });
-    socket.on("chat:message", () => utils.support.guestConversation.invalidate());
+    socket.on("chat:typing", ({ sender }: { sender: "owner" | "ai" }) => { if (sender === "ai") setIsAiTyping(true); });
+    socket.on("chat:message", ({ sender }: { sender: string }) => { if (sender === "ai") setIsAiTyping(false); void utils.support.guestConversation.invalidate(); });
     socket.io.on("reconnect", () => { utils.support.guestConversation.invalidate(); toast.success("تمت إعادة اتصال المحادثة."); });
     socket.on("connect_error", () => toast.error("تعذّر الاتصال الحي، ستستمر المحادثة عند عودة الشبكة."));
     return () => { socket.disconnect(); };
@@ -62,7 +65,7 @@ export default function GuestChat() {
       return;
     }
     const newOwnerMessages = messages.filter(message => !knownMessageIdsRef.current?.has(message.id) && message.sender === "owner");
-    if (newOwnerMessages.length) toast.success("رسالة جديدة من خدمة العملاء", { description: newOwnerMessages.at(-1)?.content.slice(0, 90) });
+    if (newOwnerMessages.length) { toast.success("رسالة جديدة من خدمة العملاء", { description: newOwnerMessages.at(-1)?.content.slice(0, 90) }); notificationSoundRef.current?.play().catch(() => undefined); }
     knownMessageIdsRef.current = new Set(messages.map(message => message.id));
   }, [conversationQuery.data?.messages]);
 
@@ -97,6 +100,7 @@ export default function GuestChat() {
         ? { avatarUrl: brandAssets.channelAvatars.privateOffice, wallpaperUrl: brandAssets.channelCovers.privateOffice }
         : { avatarUrl: brandAssets.institutionSeal, wallpaperUrl: brandAssets.channelCovers.institution };
   return <>
+    <audio ref={notificationSoundRef} preload="auto" src={brandAssets.sounds.notification} />
     <InstitutionChat
       messages={messages}
       attachments={attachments}
@@ -115,6 +119,7 @@ export default function GuestChat() {
         catch (error) { toast.error(error instanceof Error ? error.message : "تعذّر تجهيز الملف."); }
       }}
       callControl={<GuestCallControl publicId={publicId} accessToken={accessToken} disabled={conversation.status === "closed"} compact />}
+      isTyping={isAiTyping}
       onVideoRequest={() => toast.message("يتطلب الاتصال المرئي تفعيل مسار فيديو WebRTC منفصل؛ الاتصال الصوتي متاح الآن.")}
     />
     <GuestIncomingCall publicId={publicId} accessToken={accessToken} />

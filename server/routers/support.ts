@@ -5,7 +5,7 @@ import * as db from "../db";
 import { notifyOwner } from "../_core/notification";
 import { publicProcedure, router } from "../_core/trpc";
 import { storagePut } from "../storage";
-import { emitRealtimeMessage } from "../realtime";
+import { emitChatTyping, emitRealtimeMessage } from "../realtime";
 import { supportChannelValues } from "../../shared/supportChannels";
 import { appendStatusMediaChunk, beginStatusMediaUpload, finishStatusMediaUpload } from "../statusMediaUpload";
 import { generateCustomerAutoReply } from "../customerResponder";
@@ -172,9 +172,13 @@ export const supportRouter = router({
       if (result.reason === "closed") throw new TRPCError({ code: "FORBIDDEN", message: "هذه المحادثة مغلقة. ابدأ محادثة جديدة إذا احتجت إلى مساعدة." });
       if (!result.conversation || !result.message) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "تعذّر إرسال الرسالة." });
       emitRealtimeMessage(result.conversation.id, { messageId: result.message.id, sender: "guest" });
-      await ownerNotice("رسالة دعم جديدة", `${result.conversation.guestName}: ${result.message.content.slice(0, 180)}`);
-      const automaticReply = await generateCustomerAutoReply({ conversationId: result.conversation.id, guestName: result.conversation.guestName, channel: input.channel, content: result.message.content, aiAutoReplyEnabled: result.conversation.aiAutoReplyEnabled });
-      if (automaticReply) emitRealtimeMessage(result.conversation.id, { messageId: automaticReply.id, sender: "ai" });
+      void ownerNotice("رسالة دعم جديدة", `${result.conversation.guestName}: ${result.message.content.slice(0, 180)}`).catch(error => console.error("[Support] تعذّر إرسال تنبيه المالك:", error));
+      if (result.conversation.aiAutoReplyEnabled) {
+        emitChatTyping(result.conversation.id, "ai");
+        void generateCustomerAutoReply({ conversationId: result.conversation.id, guestName: result.conversation.guestName, channel: input.channel, content: result.message.content, aiAutoReplyEnabled: true })
+          .then(automaticReply => { if (automaticReply) emitRealtimeMessage(result.conversation!.id, { messageId: automaticReply.id, sender: "ai" }); })
+          .catch(error => console.error("[Support] تعذّر إنشاء الرد الآلي:", error));
+      }
       return result.message;
     }),
 

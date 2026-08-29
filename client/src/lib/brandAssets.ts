@@ -5,6 +5,10 @@ export const brandAssets = {
   institutionGreenSplash: "/manus-storage/institution-green-splash_1f36006a.jpg",
   institutionSeal: "/manus-storage/institution-seal_f05d4825.jpg",
   kingdomWatermark: "/manus-storage/kingdom-watermark_411c4335.png",
+  sounds: {
+    notification: "/manus-storage/institution-notification_e75d0d2c.m4a",
+    callRingtone: "/manus-storage/institution-call-ringtone_99aa9f16.wav",
+  },
   channelAvatars: {
     finance: "/manus-storage/finance-institutional-profile_75895ad6.png",
     followUp: "/manus-storage/preview-follow-up-avatar_4fa4eee6.png",

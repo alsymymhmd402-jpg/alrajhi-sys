@@ -7,6 +7,7 @@ import { Loader2, Mic, PhoneCall, PhoneOff, UserRound } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { playNotificationSound } from "@/lib/notificationSound";
 
 type IncomingCall = { callId: number; conversationId: number; guestName: string };
 
@@ -54,7 +55,7 @@ export function OwnerCallListener() {
     if (!token) return;
     const socket = io({ path: "/api/realtime", transports: ["websocket"], auth: { role: "owner", token } });
     socketRef.current = socket;
-    socket.on("call:incoming", (call: IncomingCall) => { incomingCallRef.current = call; setMissed(false); setAccepting(false); setVoiceFallbackNotice(null); setIncoming(call); toast.message(`مكالمة واردة من ${call.guestName}`); });
+    socket.on("call:incoming", (call: IncomingCall) => { incomingCallRef.current = call; setMissed(false); setAccepting(false); setVoiceFallbackNotice(null); setIncoming(call); playNotificationSound(); toast.message(`مكالمة واردة من ${call.guestName}`); });
     socket.on("webrtc:offer", async ({ callId, sdp }) => {
       if (!activeCallRef.current || activeCallRef.current.callId !== callId || !peerRef.current) return;
       await peerRef.current.setRemoteDescription(sdp);

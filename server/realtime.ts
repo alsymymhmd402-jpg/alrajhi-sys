@@ -64,6 +64,10 @@ export function emitRealtimeMessage(conversationId: number, payload: { messageId
   if (realtimeIo) emitChatMessageTo(realtimeIo, conversationId, payload);
 }
 
+export function emitChatTyping(conversationId: number, sender: "owner" | "ai") {
+  realtimeIo?.to(chatRoom(conversationId)).emit("chat:typing", { sender });
+}
+
 async function recordCallSystemMessage(io: Server, call: Awaited<ReturnType<typeof db.getCallLog>>, content: string) {
   if (!call?.conversationId) return;
   try {
