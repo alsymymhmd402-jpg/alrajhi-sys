@@ -9,6 +9,7 @@ import { emitChatTyping, emitRealtimeMessage } from "../realtime";
 import { supportChannelValues } from "../../shared/supportChannels";
 import { appendStatusMediaChunk, beginStatusMediaUpload, finishStatusMediaUpload } from "../statusMediaUpload";
 import { generateCustomerAutoReply } from "../customerResponder";
+import { verifyCustomerGoogleIdToken } from "../googleCustomerAuth";
 
 export const supportStatusSchema = z.enum(["open", "in_progress", "closed"]);
 export const supportChannelSchema = z.enum(supportChannelValues);
@@ -84,21 +85,27 @@ export const supportRouter = router({
         guestName: z.string().trim().min(2, "يرجى كتابة الاسم.").max(120),
         issue: supportMessageSchema,
         inviteCode: z.string().trim().min(8).max(24),
+        googleIdToken: z.string().trim().min(100).max(12000).optional(),
       }).merge(guestProfileSchema),
     )
     .mutation(async ({ input }) => {
       const result = await db.validateInvitation(input.inviteCode);
       if (!result.invitation || result.reason) throw new TRPCError({ code: "NOT_FOUND", message: "رابط الدعوة غير صالح أو انتهت صلاحيته." });
-      const consumed = await db.consumeInvitation(result.invitation.id);
-      if (!consumed) throw new TRPCError({ code: "NOT_FOUND", message: "تعذّر استخدام رابط الدعوة." });
       const invitationId = result.invitation.id;
+      let googleProfile: Awaited<ReturnType<typeof verifyCustomerGoogleIdToken>> | null = null;
+      if (input.googleIdToken) {
+        try { googleProfile = await verifyCustomerGoogleIdToken(input.googleIdToken); }
+        catch { throw new TRPCError({ code: "UNAUTHORIZED", message: "تعذّر التحقق من حساب Google. أعد تسجيل الدخول ثم حاول مرة أخرى." }); }
+      }
+      const consumed = await db.consumeInvitation(invitationId);
+      if (!consumed) throw new TRPCError({ code: "NOT_FOUND", message: "تعذّر استخدام رابط الدعوة." });
       const conversation = await db.createSupportConversation({
         publicId: nanoid(14),
         accessToken: nanoid(40),
-        guestName: input.guestName,
+        guestName: googleProfile?.name || input.guestName,
         issue: input.issue,
         invitationId,
-        email: input.email || undefined,
+        email: googleProfile?.email || input.email || undefined,
         phone: input.phone || undefined,
         extraData: input.extraData || undefined,
       });

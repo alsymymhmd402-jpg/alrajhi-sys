@@ -21,6 +21,8 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useLocation, useRoute } from "wouter";
 import { brandAssets } from "@/lib/brandAssets";
+import { Capacitor } from "@capacitor/core";
+import { SocialLogin } from "@capgo/capacitor-social-login";
 const fileToBase64 = (file: File) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -43,6 +45,9 @@ export default function InviteGuest() {
   const [email, setEmail] = useState("");
   const [issue, setIssue] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [googleIdToken, setGoogleIdToken] = useState("");
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleConnected, setGoogleConnected] = useState(false);
   useEffect(() => {
     if (existingPublicId) setLocation(`/client/${existingPublicId}`);
   }, [existingPublicId, setLocation]);
@@ -51,6 +56,26 @@ export default function InviteGuest() {
     { enabled: Boolean(code && !existingPublicId) }
   );
   const settingsQuery = trpc.operations.settings.useQuery();
+  const googleSignIn = async () => {
+    if (!phone.trim()) { toast.error("أدخل رقم الهاتف أولاً."); return; }
+    if (Capacitor.getPlatform() === "web") { toast.message("تسجيل Google متاح داخل تطبيق خدمة العملاء Android."); return; }
+    const webClientId = import.meta.env.VITE_GOOGLE_CUSTOMER_WEB_CLIENT_ID;
+    if (!webClientId) { toast.error("لم يتم إعداد تسجيل Google بعد."); return; }
+    try {
+      setGoogleLoading(true);
+      await SocialLogin.initialize({ google: { webClientId, mode: "online" } });
+      const result = await SocialLogin.login({ provider: "google", options: { scopes: ["profile", "email"] } });
+      const response = result.result as { idToken?: string | null; profile?: { email?: string | null; name?: string | null; imageUrl?: string | null } };
+      if (!response.idToken) throw new Error("لم يصل رمز Google الموثق.");
+      setGoogleIdToken(response.idToken);
+      if (response.profile?.name) setGuestName(response.profile.name);
+      if (response.profile?.email) setEmail(response.profile.email);
+      setGoogleConnected(true);
+      toast.success("تم ربط حساب Google. أكمل الطلب لفتح المراسلة.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذّر تسجيل الدخول عبر Google.");
+    } finally { setGoogleLoading(false); }
+  };
   const createConversation = trpc.support.create.useMutation({
     onSuccess: ({ publicId, accessToken }) => {
       saveClientSession(publicId, accessToken);
@@ -160,6 +185,13 @@ export default function InviteGuest() {
           className="h-12 rounded-xl border-[#254037] bg-[#101a16] text-right text-emerald-50 placeholder:text-emerald-100/30"
         />
       </label>
+      {phone.trim() && <div className="rounded-xl border border-emerald-900/70 bg-[#0b221b] p-3">
+        <Button type="button" variant="outline" onClick={googleSignIn} disabled={googleLoading} className="h-11 w-full rounded-xl border-emerald-600 bg-[#10251e] font-bold text-white hover:bg-[#17392d]">
+          {googleLoading ? <Loader2 className="ml-2 size-4 animate-spin" /> : <span className="ml-2 flex size-5 items-center justify-center rounded-full bg-white text-xs font-black text-[#4285f4]">G</span>}
+          {googleConnected ? "تم ربط حساب Google" : "تسجيل الدخول عبر Google"}
+        </Button>
+        <p className="mt-2 text-center text-[11px] text-emerald-100/55">اربط حساب Google اختيارياً لتعبئة بيانات الملف والتحقق منها.</p>
+      </div>}
       <label className="block">
         <span className="mb-2 block text-sm font-bold text-emerald-100/85">
           البريد الإلكتروني{" "}
@@ -197,7 +229,9 @@ export default function InviteGuest() {
           email: email || undefined,
           issue,
           inviteCode: code,
-          ...(avatarFile
+                      ...(googleIdToken ? { googleIdToken } : {}),
+            ...(avatarFile
+
             ? {
                 avatarFileName: avatarFile.name,
                 avatarMimeType: avatarFile.type,
