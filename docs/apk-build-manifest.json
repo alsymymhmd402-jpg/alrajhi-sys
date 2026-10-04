@@ -12,7 +12,7 @@
     "application_id": "org.alwaleed.customer.siteapk",
     "version_code": 5,
     "version_name": "5.0.0",
-    "apk": "external-deployment/client-native-app/app/build/outputs/apk/release/alwaleed-customer-site-stable-v5.apk",
+    "apk": "external-deployment/client-native-app/releases/alwaleed-customer-site-stable-v5.apk",
     "sha256": "7d55fc8aeb9024ed424393e3719b37ac53cb63fdd2186eeea12cf368bb9d6f25",
     "download_url": "https://files.manuscdn.com/user_upload_by_module/session_file/310519663996640306/VPdnNGSnWlkvNxxp.apk"
   },
