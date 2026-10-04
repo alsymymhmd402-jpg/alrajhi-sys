@@ -14,13 +14,13 @@ importers:
       '@capacitor/core':
         specifier: ^7.4.3
         version: 7.6.8
-      '@capgo/capacitor-social-login':
-        specifier: ^7.19.1
-        version: 7.19.1(@capacitor/core@7.6.8)
     devDependencies:
       '@capacitor/cli':
         specifier: ^7.4.3
         version: 7.6.8
+      typescript:
+        specifier: ^5.7.2
+        version: 5.7.2
 
 packages:
 
@@ -36,11 +36,6 @@ packages:
 
   '@capacitor/core@7.6.8':
     resolution: {integrity: sha512-x1xfxvNcTSnj6OoYaAB0n0a0HRvi5f2YjcVnMLxpMhbHDgGDAzzN9z8cnPCYV+SKTvqGF1hezHm82Op32XaAGg==}
-
-  '@capgo/capacitor-social-login@7.19.1':
-    resolution: {integrity: sha512-OoFoWPVsRIjPL/ADjUr1bdJlJvAf7uLUeqwiygTFUgnEl/NXcRMR3h0p/5USlW3DkegDv/C8d8gOQjxMkfKmzw==}
-    peerDependencies:
-      '@capacitor/core': '>=7.0.0'
 
   '@ionic/cli-framework-output@2.2.8':
     resolution: {integrity: sha512-TshtaFQsovB4NWRBydbNFawql6yul7d5bMiW1WYYf17hd99V6xdDdk3vtF51bw6sLkxON3bDQpWsnUc9/hVo3g==}
@@ -345,6 +340,11 @@ packages:
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
+  typescript@5.7.2:
+    resolution: {integrity: sha512-i5t66RHxDvVN40HfDd1PsEThGNnlMCMT3jMUuoh9/0TaqWevNontacunWyN02LA9/fIbEWlcHZcgTKb9QoaLfg==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
   undici-types@8.3.0:
     resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
@@ -418,10 +418,6 @@ snapshots:
   '@capacitor/core@7.6.8':
     dependencies:
       tslib: 2.8.1
-
-  '@capgo/capacitor-social-login@7.19.1(@capacitor/core@7.6.8)':
-    dependencies:
-      '@capacitor/core': 7.6.8
 
   '@ionic/cli-framework-output@2.2.8':
     dependencies:
@@ -744,6 +740,8 @@ snapshots:
   tree-kill@1.2.2: {}
 
   tslib@2.8.1: {}
+
+  typescript@5.7.2: {}
 
   undici-types@8.3.0: {}
 

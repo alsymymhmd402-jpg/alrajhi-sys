@@ -9,10 +9,10 @@
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
-    "@capacitor/core": "^7.4.3",
-    "@capgo/capacitor-social-login": "^7.19.1"
+    "@capacitor/core": "^7.4.3"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.4.3"
+    "@capacitor/cli": "^7.4.3",
+    "typescript": "^5.7.2"
   }
 }

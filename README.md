@@ -1,6 +1,6 @@
 # نظام الراجحي — منصة خدمة العملاء
 
-منصة عربية RTL للتواصل بين المستفيدين وفريق المؤسسة، مع غرفة عمليات إدارية، محادثات لحظية، مكالمات WebRTC، ردود ذكاء اصطناعي اختيارية، وتطبيقَي Android منفصلين مبنيين باستخدام Capacitor.
+منصة عربية RTL للتواصل بين المستفيدين وفريق المؤسسة، مع غرفة عمليات إدارية، محادثات لحظية، مكالمات WebRTC، وردود ذكاء اصطناعي اختيارية. توجد وثيقة تسليم كاملة لتحويل بوابة العميل إلى APK في [`docs/APK_BUILD_HANDOFF_AR.md`](docs/APK_BUILD_HANDOFF_AR.md)، وملف حالة آلي في [`docs/apk-build-manifest.json`](docs/apk-build-manifest.json).
 
 ## الروابط العامة
 
@@ -9,12 +9,12 @@
 | الموقع المنشور | https://voicecall-uwxhmyez.manus.space |
 | بوابة العميل | https://voicecall-uwxhmyez.manus.space/client/start |
 | مستودع GitHub | https://github.com/alsymymhmd402-jpg/alrajhi-sys |
-| تطبيق العميل | `org.alwaleed.customer` |
+| تطبيق العميل الحالي | `org.alwaleed.customer.siteapk` |
 | غرفة العمليات | `org.alwaleed.operations` |
 
 ## بنية المشروع
 
-يوجد كود الواجهة في `client/`، وكود الخادم وإجراءات tRPC في `server/`، ومخطط قاعدة البيانات في `drizzle/`. توجد إعدادات غلاف تطبيق العميل وغرفة العمليات تحت `external-deployment/`. لا تُرفع مجلدات `node_modules` أو مخرجات Gradle أو ملفات البيئة إلى هذا المستودع.
+يوجد كود الواجهة في `client/`، وكود الخادم وإجراءات tRPC في `server/`، ومخطط قاعدة البيانات في `drizzle/`. توجد إعدادات غلاف تطبيق العميل وغرفة العمليات تحت `external-deployment/`. لا تُرفع مجلدات `node_modules` أو مخرجات Gradle أو ملفات البيئة إلى هذا المستودع. الغلاف المرجعي الحالي للـAPK هو `external-deployment/client-native-app/`؛ أما `external-deployment/client-app/` فهو غلاف Capacitor سابق لا يُعتبر مستقرًا حتى يثبت تشغيله على جهاز Android مع logcat.
 
 ## التشغيل المحلي
 
@@ -27,17 +27,17 @@ pnpm test
 pnpm dev
 ```
 
-## بناء تطبيق العميل
+## بناء تطبيق العميل — المرجع الكامل
 
 ```bash
-cd external-deployment/client-app
-pnpm install
-pnpm exec cap sync android
+cd external-deployment/client-native-app
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+export ANDROID_SDK_ROOT=/home/ubuntu/android-sdk
 cd android
-./gradlew assembleDebug --no-daemon --max-workers=1
+./gradlew assembleRelease --no-daemon --max-workers=1
 ```
 
-ينتج الملف في `android/app/build/outputs/apk/debug/app-debug.apk`. غرفة العمليات لها غلاف مستقل تحت `external-deployment/owner-app/`.
+ينتج ملف APK في `app/build/outputs/apk/release/`. يجب قراءة وثيقة التسليم قبل التوقيع أو التسليم، ويجب اختبار التشغيل على جهاز Android حقيقي أو محاكي مع logcat. غرفة العمليات لها غلاف مستقل تحت `external-deployment/owner-app/`.
 
 ## المصادقة والإعدادات
 

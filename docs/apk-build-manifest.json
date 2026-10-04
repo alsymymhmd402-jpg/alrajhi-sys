@@ -1,0 +1,42 @@
+{
+  "project": "alrajhi-sys",
+  "language": "ar",
+  "goal": "تحويل واجهات موقع العميل كاملة إلى APK دون اختصار أو إعادة تصميم",
+  "repository": "alsymymhmd402-jpg/alrajhi-sys",
+  "source_site": "https://voicecall-uwxhmyez.manus.space/client/start",
+  "institution_site": "https://alwaleedphilanthropies.org/ar?hl=ar-YE",
+  "current_build": {
+    "project_dir": "external-deployment/client-native-app",
+    "entry_point": "external-deployment/client-native-app/app/src/main/java/org/alwaleed/customer/MainActivity.java",
+    "architecture": "native Android shell with WebView loading the exact production client site",
+    "application_id": "org.alwaleed.customer.siteapk",
+    "version_code": 5,
+    "version_name": "5.0.0",
+    "apk": "external-deployment/client-native-app/app/build/outputs/apk/release/alwaleed-customer-site-stable-v5.apk",
+    "sha256": "7d55fc8aeb9024ed424393e3719b37ac53cb63fdd2186eeea12cf368bb9d6f25",
+    "download_url": "https://files.manuscdn.com/user_upload_by_module/session_file/310519663996640306/VPdnNGSnWlkvNxxp.apk"
+  },
+  "abandoned_build": {
+    "project_dir": "external-deployment/client-app",
+    "reason": "Capacitor wrapper crashed at runtime according to user; no physical-device logcat was available",
+    "important_note": "Do not describe the Capacitor APK as stable"
+  },
+  "required_runtime_checks": [
+    "Install and launch on a real Android device or emulator",
+    "Capture adb logcat if launch crashes",
+    "Test invite flow",
+    "Test all client pages",
+    "Test messaging send/receive",
+    "Test keyboard and bottom navigation",
+    "Test app restart and session persistence",
+    "Test institution site inside APK"
+  ],
+  "build_environment": {
+    "java": "21",
+    "android_sdk": "/home/ubuntu/android-sdk",
+    "build_tools": "35.0.0",
+    "keystore": "/home/ubuntu/.android/customer-release.jks",
+    "keystore_password": "not stored in repository"
+  },
+  "canonical_handoff": "docs/APK_BUILD_HANDOFF_AR.md"
+}
